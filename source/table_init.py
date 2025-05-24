@@ -2,11 +2,11 @@ import gc
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
+from __init__ import logger
 from logger import LogUtils
-from main import logger
 import pandas as pd
 from psycopg2 import sql
-from psycopg2.extensions import connection
+from psycopg2.extensions import connection, cursor
 from psycopg2.extras import execute_values
 from sql.create_queries import (
     airports_create_query,
@@ -19,6 +19,7 @@ from sql.create_queries import (
     ndt_temp_create_query,
     unified_telemetry_create_query,
 )
+from sql.drop_queries import drop_tables_query
 from sql.insert_queries import (
     airport_insert_query,
     caida_asn_insert_query,
@@ -46,7 +47,7 @@ class TableInitializer:
             unified_telemetry_create_query,
         ]
 
-        data_dir = Path(__file__).parent / "data"
+        data_dir = (Path(__file__).parent / '..' / "data").resolve()
         self._insert_data: InsertData = [
             (cities_insert_query, data_dir / 'cities.csv', None),
             (
@@ -81,9 +82,15 @@ class TableInitializer:
             for insert_query, csv_file_path, clean_dataframe in self._insert_data:
                 self._insert_data_from_csv(cur, csv_file_path, insert_query, clean_dataframe)
 
+    @LogUtils.log_function
+    def drop_tables(self) -> None:
+        with self._conn.cursor() as cur:
+            cur.execute(drop_tables_query)
+            self._conn.commit()
+
     def _insert_data_from_csv(
         self,
-        cur: connection.cursor,
+        cur: cursor,
         csv_file_path: Path,
         insert_query: sql.SQL,
         clean_dataframe: Callable[[pd.DataFrame], None] | None = None,

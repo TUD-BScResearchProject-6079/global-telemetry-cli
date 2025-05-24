@@ -2,12 +2,10 @@ import argparse
 from datetime import datetime
 import os
 
+from __init__ import logger
 from dotenv import load_dotenv
-from logger import LogUtils
 import psycopg2
-from table_initializer import TableInitializer
-
-logger = LogUtils.init_logger()
+from table_init import TableInitializer
 
 
 def parse_args() -> argparse.Namespace:
@@ -17,6 +15,12 @@ def parse_args() -> argparse.Namespace:
         "--init",
         action="store_true",
         help="Initialize the database by creating and populating the required tables.",
+    )
+
+    parser.add_argument(
+        "--drop",
+        action="store_true",
+        help="Drop all tables in the database. Use with caution!",
     )
 
     parser.add_argument(
@@ -42,6 +46,10 @@ def main() -> None:
             port=os.getenv("DB_PORT"),
         ) as conn:
             logger.info("Connected to the database successfully.")
+            if args.drop:
+                logger.info("Drop flag detected. Dropping all tables...")
+                table_initializer = TableInitializer(conn)
+                table_initializer.drop_tables()
             if args.init:
                 logger.info("Initialization flag detected. Performing setup...")
                 table_initializer = TableInitializer(conn)
