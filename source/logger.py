@@ -12,13 +12,15 @@ class LogUtils:
     _logger = None
 
     @staticmethod
-    def init_logger(log_dir: str = "logs") -> logging.Logger:
+    def init_logger(log_dir: str = 'logs') -> logging.Logger:
         if LogUtils._logger:
             return LogUtils._logger
 
-        os.makedirs(log_dir, exist_ok=True)
-        utc_now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
-        log_path = os.path.join(log_dir, f"{utc_now}.log")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        logs_dir_path = os.path.join(os.path.abspath(os.path.join(current_dir, '..')), log_dir)
+        os.makedirs(logs_dir_path, exist_ok=True)
+        utc_now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%SZ')
+        log_path = os.path.join(log_dir, f'{utc_now}.log')
 
         logging.Formatter.converter = time.gmtime
 
@@ -40,15 +42,15 @@ class LogUtils:
 
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            logger.info(f"Starting: {func.__name__}")
+            logger.info(f'Starting: {func.__name__}')
             start_time = time.time()
             try:
                 result = func(*args, **kwargs)
                 duration = time.time() - start_time
-                logger.info(f"Finished: {func.__name__} (Duration: {duration:.2f}s)")
+                logger.info(f'Finished: {func.__name__} (Duration: {duration:.2f}s)')
                 return result
             except Exception as e:
-                logger.exception(f"Exception in {func.__name__}: {e}")
+                logger.exception(f'Exception in {func.__name__}: {e}')
                 raise
 
         return wrapper
