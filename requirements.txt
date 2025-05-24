@@ -1,0 +1,6 @@
+python-dotenv
+psycopg2
+black
+isort
+flake8
+mypy
