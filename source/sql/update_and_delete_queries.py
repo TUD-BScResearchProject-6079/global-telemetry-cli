@@ -57,3 +57,15 @@ cf_temp_standardize_cities_query = sql.SQL(
         AND cf.client_country_code = c.country_code;
 """
 )
+
+cf_delete_query = sql.SQL(
+    """
+    DELETE FROM cf_temp;
+"""
+)
+
+ndt7_delete_query = sql.SQL(
+    """
+    DELETE FROM ndt7_temp;
+"""
+)

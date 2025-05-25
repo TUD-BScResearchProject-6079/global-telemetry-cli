@@ -61,6 +61,7 @@ class DataLoader:
     ) -> None:
         df: DataFrame = self._client.query(download_query).to_dataframe()
         logger.info(f"Downloaded {len(df)} rows from BigQuery from {dataset_name}.")
+        df.replace('', None, inplace=True)
         df = df.astype(object).where(df.notnull(), None)
         data_tuples = [tuple(x) for x in df.to_records(index=False)]
         execute_values(cur, insert_query, data_tuples)
