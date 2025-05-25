@@ -1,5 +1,17 @@
 from psycopg2 import sql
 
+processed_dates_create_query = sql.SQL(
+    """
+    CREATE TABLE processed_dates (
+    processed_date DATE PRIMARY KEY NOT NULL
+);
+
+CREATE INDEX processed_date_hash_idx
+    ON processed_dates USING HASH (processed_date);
+"""
+)
+
+
 caida_asn_create_table_query = sql.SQL(
     """
     CREATE TABLE IF NOT EXISTS public.as_statistics

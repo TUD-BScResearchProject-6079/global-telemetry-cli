@@ -1,5 +1,12 @@
 from psycopg2 import sql
 
+processed_date_insert_query = sql.SQL(
+    """
+    INSERT INTO processed_dates (processed_date) VALUES %s
+"""
+)
+
+
 cities_insert_query = sql.SQL(
     """
     INSERT INTO cities (name, asciiname, name1, name2, name3, name4, region, country_code)

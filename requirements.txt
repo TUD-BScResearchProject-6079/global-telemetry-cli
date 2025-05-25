@@ -4,3 +4,7 @@ black
 isort
 flake8
 mypy
+google-cloud-bigquery-storage
+google-cloud-bigquery
+db-dtypes
+pandas

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import datetime, timezone
 import functools
 import logging
@@ -50,7 +48,6 @@ class LogUtils:
                 logger.info(f'Finished: {func.__name__} (Duration: {duration:.2f}s)')
                 return result
             except Exception as e:
-                logger.exception(f'Exception in {func.__name__}: {e}')
-                raise
+                logger.error(f'Exception in {func.__name__}: {e.__class__.__name__} - {e}')
 
         return wrapper

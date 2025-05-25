@@ -17,6 +17,7 @@ from sql.create_queries import (
     countries_with_starlink_measurements_create_query,
     ndt_best_servers_create_query,
     ndt_temp_create_query,
+    processed_dates_create_query,
     unified_telemetry_create_query,
 )
 from sql.drop_queries import drop_tables_query
@@ -33,9 +34,10 @@ InsertData = List[Tuple[sql.SQL, Path, Optional[Callable[[pd.DataFrame], None]]]
 
 
 class TableInitializer:
-    def __init__(self, conn: connection):
+    def __init__(self, conn: connection) -> None:
         self._conn = conn
         self._create_queries = [
+            processed_dates_create_query,
             caida_asn_create_table_query,
             countries_with_starlink_measurements_create_query,
             cities_create_query,

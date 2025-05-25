@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 
 from __init__ import logger
+from data_loader import DataLoader
 from dotenv import load_dotenv
 import psycopg2
 from table_init import TableInitializer
@@ -58,7 +59,8 @@ def main() -> None:
                 try:
                     date = datetime.strptime(args.date, "%Y-%m-%d").date()
                     logger.info(f"Running with specified date: {date}")
-                    # TODO: Add app logic here
+                    data_loader = DataLoader(conn)
+                    data_loader.load_data(date)
                 except ValueError:
                     logger.error("Invalid date format. Use YYYY-MM-DD.")
                     return
