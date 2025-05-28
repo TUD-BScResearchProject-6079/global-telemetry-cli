@@ -49,9 +49,13 @@ def main() -> None:
         ) as conn:
             logger.info("Connected to the database successfully.")
             if args.drop:
-                logger.info("Drop flag detected. Dropping all tables...")
-                table_initializer = TableInitializer(conn)
-                table_initializer.drop_tables()
+                confirm = input("Are you sure you want to drop all tables? (y/n): ").strip().lower()
+                if confirm == 'y':
+                    logger.info("Drop flag confirmed. Dropping all tables...")
+                    table_initializer = TableInitializer(conn)
+                    table_initializer.drop_tables()
+                else:
+                    logger.info("Drop flag detected, but operation cancelled by user.")
             if args.init:
                 logger.info("Initialization flag detected. Performing setup...")
                 table_initializer = TableInitializer(conn)
@@ -59,14 +63,15 @@ def main() -> None:
             if args.date:
                 try:
                     date = datetime.strptime(args.date, "%Y-%m-%d").date()
-                    logger.info(f"Running with specified date: {date}")
-                    data_loader = DataLoader(conn)
-                    data_loader.load_data(date)
-                    data_processer = DataProcesser(conn)
-                    data_processer.process_data()
                 except ValueError:
                     logger.error("Invalid date format. Use YYYY-MM-DD.")
                     return
+                logger.info(f"Running with specified date: {date}")
+                data_loader = DataLoader(conn)
+                data_loader.load_data(date)
+                data_processer = DataProcesser(conn)
+                data_processer.process_data()
+
     except Exception as e:
         logger.error(f"Failed to connect to the database: {e}")
         return

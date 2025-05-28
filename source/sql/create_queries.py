@@ -58,23 +58,26 @@ cities_create_query = sql.SQL(
 airports_create_query = """
     CREATE TABLE IF NOT EXISTS airport_country (
         airport_code CHAR(3) PRIMARY KEY,
-        country_code CHAR(2) NOT NULL
+        country_code CHAR(2) NOT NULL,
+        airport_city VARCHAR(255)
     );
 """
 
 
 ndt_best_servers_create_query = """
-    CREATE TABLE IF NOT EXISTS ndt_server_for_country (
-        client_country CHAR(2) NOT NULL,
-        server_city VARCHAR(100) NOT NULL,
-        server_country CHAR(2) NOT NULL
+    CREATE TABLE IF NOT EXISTS ndt_server_for_city (
+        client_city VARCHAR(255) NOT NULL,
+        client_country_code CHAR(2) NOT NULL,
+        server_city VARCHAR(255) NOT NULL,
+        server_country_code CHAR(2) NOT NULL
     );
 """
 
 
 cf_best_servers_create_query = """
-    CREATE TABLE IF NOT EXISTS cf_server_for_country (
-        client_country CHAR(2) NOT NULL,
+    CREATE TABLE IF NOT EXISTS cf_server_for_city (
+        client_city VARCHAR(255) NOT NULL,
+        client_country_code CHAR(2) NOT NULL,
         server_airport_code CHAR(3) NOT NULL
     );
 """
@@ -189,6 +192,8 @@ unified_telemetry_create_query = sql.SQL(
         client_city character varying(255) COLLATE pg_catalog."default",
         client_region character varying(255) COLLATE pg_catalog."default",
         client_country_code character(2) COLLATE pg_catalog."default" NOT NULL,
+        server_city character varying(255) COLLATE pg_catalog."default",
+        server_country_code character(2) COLLATE pg_catalog."default" NOT NULL,
         asn integer NOT NULL,
         packet_loss_rate numeric(10,5) NOT NULL,
         download_throughput_mbps numeric(10,5),
