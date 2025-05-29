@@ -8,3 +8,6 @@ google-cloud-bigquery-storage
 google-cloud-bigquery
 db-dtypes
 pandas
+requests
+types-requests
+graphqlclient

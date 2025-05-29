@@ -1,8 +1,10 @@
 import gc
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple
 
-from __init__ import logger
+from __init__ import data_dir, logger
+from caida_api_queries import fetch_asn_data
+from enums import CsvFiles, Tables
 from logger import LogUtils
 import pandas as pd
 from psycopg2 import sql
@@ -20,6 +22,7 @@ from sql.create_queries import (
     processed_dates_create_query,
     unified_telemetry_create_query,
 )
+from sql.delete_queries import delete_all_from_table_query
 from sql.drop_queries import drop_tables_query
 from sql.insert_queries import (
     airport_insert_query,
@@ -29,9 +32,12 @@ from sql.insert_queries import (
     countries_with_starlink_measurements_insert_query,
     ndt_best_server_insert_query,
 )
-from sql.update_and_delete_queries import airport_codes_standardize_cities_query
+from utils import delete_files, download_file, generate_cities_csv
 
-InsertData = List[Tuple[sql.SQL, Path, Optional[Callable[[pd.DataFrame], None]]]]
+from source.sql.delete_queries import airport_codes_standardize_cities_query
+
+InsertTuple = Tuple[sql.SQL, sql.SQL | None, str, Optional[Callable[[pd.DataFrame], None]]]
+InsertData = Dict[Tables, InsertTuple]
 
 
 class TableInitializer:
@@ -50,55 +56,84 @@ class TableInitializer:
             unified_telemetry_create_query,
         ]
 
-        data_dir = (Path(__file__).parent / '..' / "data").resolve()
-        self._insert_data: InsertData = [
-            (cities_insert_query, data_dir / 'cities.csv', None),
-            (
+        self._insert_data: InsertData = {
+            Tables.CITIES: (cities_insert_query, None, CsvFiles.CITIES.value, None),
+            Tables.AIRPORT_CODES: (
                 airport_insert_query,
-                data_dir / 'airport-codes.csv',
+                airport_codes_standardize_cities_query,
+                CsvFiles.AIRPORT_CODES.value,
                 TableInitializer._clean_airport_codes,
             ),
-            (
+            Tables.NDT_BEST_SERVERS: (
                 ndt_best_server_insert_query,
-                data_dir / 'ndt-best-servers.csv',
+                None,
+                CsvFiles.NDT_BEST_SERVERS.value,
                 None,
             ),
-            (
+            Tables.CF_BEST_SERVERS: (
                 cf_best_server_insert_query,
-                data_dir / 'cf-best-servers.csv',
+                None,
+                CsvFiles.CF_BEST_SERVERS.value,
                 TableInitializer._clean_cf_servers,
             ),
-            (caida_asn_insert_query, data_dir / 'asns_query_results.csv', None),
-            (
+            Tables.AS_STATISTICS: (caida_asn_insert_query, None, CsvFiles.ASNS.value, None),
+            Tables.COUNTRIES_WITH_STARLINK: (
                 countries_with_starlink_measurements_insert_query,
-                data_dir / 'countries_w_starlink_measurements.csv',
+                None,
+                CsvFiles.COUNTRIES_WITH_STARLINK.value,
                 None,
             ),
-        ]
-        self._post_process_queries = [
-            airport_codes_standardize_cities_query,
-        ]
+        }
 
     @LogUtils.log_function
     def initialize_tables(self) -> None:
         with self._conn.cursor() as cur:
             for query in self._create_queries:
                 cur.execute(query)
-            for insert_query, csv_file_path, clean_dataframe in self._insert_data:
-                self._insert_data_from_csv(cur, csv_file_path, insert_query, clean_dataframe)
-            self._post_process_tables(cur)
+            for insert_record in self._insert_data.values():
+                self._process_and_insert_data(cur, insert_record)
             self._conn.commit()
             logger.info("All tables created and data inserted successfully.")
+
+    @LogUtils.log_function
+    def update_isns(self) -> None:
+        fetch_asn_data(CsvFiles.ASNS.value)
+        with self._conn.cursor() as cur:
+            self._clean_and_insert_data(cur, Tables.AS_STATISTICS)
+
+    @LogUtils.log_function
+    def update_airport_codes(self) -> None:
+        download_file('https://datahub.io/core/airport-codes/_r/-/data/airport-codes.csv', CsvFiles.AIRPORT_CODES.value)
+        with self._conn.cursor() as cur:
+            self._clean_and_insert_data(cur, Tables.AIRPORT_CODES)
+
+    @LogUtils.log_function
+    def update_cities(self) -> None:
+        download_file('https://download.geonames.org/export/dump/cities1000.zip', 'cities.txt', unzip=True)
+        download_file('https://download.geonames.org/export/dump/admin1CodesASCII.txt', 'regions.txt')
+        generate_cities_csv('cities.txt', 'regions.txt', CsvFiles.CITIES.value)
+        delete_files(['cities.txt', 'regions.txt'])
+        with self._conn.cursor() as cur:
+            self._clean_and_insert_data(cur, Tables.CITIES)
+
+    def _clean_and_insert_data(self, cur: cursor, table: Tables) -> None:
+        delete_query = delete_all_from_table_query(table.value)
+        cur.execute(delete_query)
+        self._process_and_insert_data(cur, self._insert_data[table])
+
+    def _process_and_insert_data(self, cur: cursor, insert_tuple: InsertTuple) -> None:
+        insert_query, post_insert_query, csv_file_name, clean_dataframe = insert_tuple
+        csv_file_path = data_dir / csv_file_name
+        self._insert_data_from_csv(cur, csv_file_path, insert_query, clean_dataframe)
+        if post_insert_query:
+            cur.execute(post_insert_query)
+            logger.info(f"Executed post-insert query for {csv_file_name}")
 
     @LogUtils.log_function
     def drop_tables(self) -> None:
         with self._conn.cursor() as cur:
             cur.execute(drop_tables_query)
             self._conn.commit()
-
-    def _post_process_tables(self, cur: cursor) -> None:
-        for query in self._post_process_queries:
-            cur.execute(query)
 
     def _insert_data_from_csv(
         self,

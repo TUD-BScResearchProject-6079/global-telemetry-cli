@@ -37,6 +37,14 @@ class DataLoader:
             self._insert_processed_date(cur, date)
             self._conn.commit()
 
+    @LogUtils.log_function
+    def update_best_servers(self) -> None:
+        pass
+
+    @LogUtils.log_function
+    def update_countries_with_starlink(self) -> None:
+        pass
+
     def _check_date(self, cur: cursor, date_to_process: date) -> None:
         if date_to_process >= datetime.now(timezone.utc).date():
             raise InvalidDateError("The script can only run on dates that have already completed (past UTC dates).")
