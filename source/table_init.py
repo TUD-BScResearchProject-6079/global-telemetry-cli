@@ -77,10 +77,10 @@ class TableInitializer:
                 TableInitializer._clean_cf_servers,
             ),
             Tables.AS_STATISTICS: (caida_asn_insert_query, None, CsvFiles.ASNS.value, None),
-            Tables.COUNTRIES_WITH_STARLINK: (
+            Tables.COUNTRIES_WITH_STARLINK_MEASUREMENTS: (
                 countries_with_starlink_measurements_insert_query,
                 None,
-                CsvFiles.COUNTRIES_WITH_STARLINK.value,
+                CsvFiles.COUNTRIES_WITH_STARLINK_MEASUREMENTS.value,
                 None,
             ),
         }

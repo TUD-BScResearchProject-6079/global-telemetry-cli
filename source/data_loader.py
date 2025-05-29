@@ -2,15 +2,26 @@ from datetime import date, datetime, timezone
 
 from __init__ import logger
 from custom_exceptions import InvalidDateError
+from enums import Tables
 from google.cloud import bigquery
 from logger import LogUtils
 from pandas import DataFrame
 from psycopg2 import sql
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import execute_values
-from sql.bigquery_queries import get_cf_formatted_query, get_ndt_formatted_query
+from sql.bigquery_queries import (
+    get_cf_best_servers_query,
+    get_cf_formatted_query,
+    get_countries_with_starlink_query,
+    get_ndt_best_servers_query,
+    get_ndt_formatted_query,
+)
+from sql.delete_queries import delete_all_from_table_query
 from sql.insert_queries import (
+    cf_best_server_insert_query,
     cf_temp_insert_query,
+    countries_with_starlink_measurements_insert_query,
+    ndt_best_server_insert_query,
     ndt_temp_insert_query,
     processed_date_insert_query,
 )
@@ -38,12 +49,51 @@ class DataLoader:
             self._conn.commit()
 
     @LogUtils.log_function
-    def update_best_servers(self) -> None:
-        pass
+    def update_best_servers(self, date_from: date, date_to: date) -> None:
+        self._check_dates(date_from, date_to)
+        with self._conn.cursor() as cur:
+            top_isns = self._get_top_isns(cur)
+            ndt_query = get_ndt_best_servers_query(
+                date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_isns
+            )
+            cf_query = get_cf_best_servers_query(date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_isns)
+            delete_ndt_query = delete_all_from_table_query(Tables.NDT_BEST_SERVERS.value)
+            cur.execute(delete_ndt_query)
+            logger.info("Deleted all rows from NDT7 Best Servers table.")
+            self._download_data(cur, ndt_query, ndt_best_server_insert_query, 'NDT7 Best Servers')
+
+            delete_cf_query = delete_all_from_table_query(Tables.CF_BEST_SERVERS.value)
+            cur.execute(delete_cf_query)
+            logger.info("Deleted all rows from Cloudflare Best Servers table.")
+            self._download_data(cur, cf_query, cf_best_server_insert_query, 'Cloudflare Best Servers')
+            self._conn.commit()
 
     @LogUtils.log_function
-    def update_countries_with_starlink(self) -> None:
-        pass
+    def update_countries_with_starlink(self, date_from: date, date_to: date) -> None:
+        self._check_dates(date_from, date_to)
+        with self._conn.cursor() as cur:
+            delete_query = delete_all_from_table_query(Tables.COUNTRIES_WITH_STARLINK_MEASUREMENTS.value)
+            cur.execute(delete_query)
+            logger.info("Deleted all rows from Countries with Starlink Measurements table.")
+            download_query = get_countries_with_starlink_query(
+                date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d")
+            )
+            self._download_data(
+                cur,
+                download_query,
+                countries_with_starlink_measurements_insert_query,
+                'Countries with Starlink Measurements',
+            )
+            self._conn.commit()
+
+    def _check_dates(self, date_from: date, date_to: date) -> None:
+        if date_from > date_to:
+            raise InvalidDateError("The start date cannot be after the end date.")
+        if date_from >= datetime.now(timezone.utc).date():
+            raise InvalidDateError("The script can only run on dates that have already completed (past UTC dates).")
+        logger.info(
+            f"Dates {date_from.strftime('%Y-%m-%d')} to {date_to.strftime('%Y-%m-%d')} are valid for processing."
+        )
 
     def _check_date(self, cur: cursor, date_to_process: date) -> None:
         if date_to_process >= datetime.now(timezone.utc).date():
