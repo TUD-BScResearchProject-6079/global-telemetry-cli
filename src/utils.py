@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import io
 import zipfile
 
@@ -6,6 +6,7 @@ import pandas as pd
 import requests
 
 from __init__ import data_dir, logger
+from src.custom_exceptions import InvalidDateError, InvalidDateRangeError
 
 
 def download_file(url: str, file_name: str, unzip: bool = False) -> None:
@@ -148,15 +149,25 @@ def generate_cities_csv(cities_txt: str, regions_txt: str, final_file_name: str)
 
 def parse_date(date_str: str) -> date:
     try:
-        return datetime.strptime(date_str.strip(), "%Y-%m-%d").date()
+        date = datetime.strptime(date_str.strip(), "%Y-%m-%d").date()
+        if date >= datetime.now(timezone.utc).date():
+            raise InvalidDateError()
+        return date
+    except InvalidDateError as e:
+        logger.error(f"Invalid date: {date_str}. The script can only run on dates that have already completed (past UTC dates).")
+        raise e
     except ValueError as e:
         logger.error(f"Invalid date format: {date_str}. Expected date format: yyyy-mm-dd.")
         raise e
 
 
 def parse_date_range(date_range: str) -> tuple[date, date]:
-    if ':' in date_range:
-        start_date, end_date = date_range.split(':', 1)
-        return (parse_date(start_date), parse_date(end_date))
-    else:
-        return parse_date(date_range), datetime.now(timezone.utc).date()
+    parts = date_range.split(':', 1)
+    start_date = parse_date(parts[0])
+    end_date = parse_date(parts[1]) if len(parts) > 1 else datetime.now(timezone.utc).date() - timedelta(days=1)
+    print("aaa", start_date, end_date)
+    if start_date > end_date:
+        logger.error(f"Invalid date range: {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}. Start date cannot be after end date.")
+        raise InvalidDateRangeError(start_date, end_date)
+    print("bbb")
+    return (start_date, end_date)

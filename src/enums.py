@@ -26,3 +26,7 @@ class UpdateChoices(Enum):
     ASN_DATE = "asn"
     AIRPORT_CODES = "airport"
     CITIES = "cities"
+
+class ExecutionDecision(Enum):
+    OK = 0
+    SKIP = 1

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date
 
 from google.cloud import bigquery
 from pandas import DataFrame
@@ -8,7 +8,7 @@ from psycopg2.extras import execute_values
 
 from __init__ import logger
 from custom_exceptions import InvalidDateError
-from enums import CsvFiles, Tables
+from enums import ExecutionDecision, CsvFiles, Tables
 from logger import LogUtils
 from sql.bigquery_queries import (
     get_cf_best_servers_query,
@@ -39,9 +39,11 @@ class DataLoader:
         self._client = bigquery.Client(project="measurement-lab")
 
     @LogUtils.log_function
-    def load_data(self, date: date) -> None:
+    def load_data(self, date: date, skip_inserted_dates: bool = False) -> ExecutionDecision:
         with self._conn.cursor() as cur:
-            self._check_date(cur, date)
+            if (result := self._check_date(cur, date, skip_inserted_dates = skip_inserted_dates)) == ExecutionDecision.SKIP:
+                logger.info(f"Skipping data loading for {date.strftime('%Y-%m-%d')} as it has already been processed.")
+                return result
             top_asns = self._get_top_asns(cur)
             ndt7_query = get_ndt_formatted_query(date.strftime("%Y-%m-%d"), top_asns)
             cf_query = get_cf_formatted_query(date.strftime("%Y-%m-%d"), top_asns)
@@ -49,15 +51,13 @@ class DataLoader:
             self._download_data(cur, cf_query, cf_temp_insert_query, 'Cloudflare')
             self._insert_processed_date(cur, date)
             self._conn.commit()
+        return ExecutionDecision.OK
 
     @LogUtils.log_function
     def update_best_servers(self, date_from: date, date_to: date) -> None:
-        self._check_dates(date_from, date_to)
         with self._conn.cursor() as cur:
             top_asns = self._get_top_asns(cur)
-            ndt_query = get_ndt_best_servers_query(
-                date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns
-            )
+            ndt_query = get_ndt_best_servers_query(date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns)
             cf_query = get_cf_best_servers_query(date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns)
             delete_ndt_query = delete_all_from_table_query(Tables.NDT_BEST_SERVERS.value)
             cur.execute(delete_ndt_query)
@@ -74,7 +74,6 @@ class DataLoader:
 
     @LogUtils.log_function
     def update_countries_with_starlink(self, date_from: date, date_to: date) -> None:
-        self._check_dates(date_from, date_to)
         with self._conn.cursor() as cur:
             delete_query = delete_all_from_table_query(Tables.COUNTRIES_WITH_STARLINK_MEASUREMENTS.value)
             cur.execute(delete_query)
@@ -91,24 +90,15 @@ class DataLoader:
             save_dataframe_to_csv(df, CsvFiles.COUNTRIES_WITH_STARLINK_MEASUREMENTS.value)
             self._conn.commit()
 
-    def _check_dates(self, date_from: date, date_to: date) -> None:
-        if date_from > date_to:
-            raise InvalidDateError("The start date cannot be after the end date.")
-        if date_from >= datetime.now(timezone.utc).date():
-            raise InvalidDateError("The script can only run on dates that have already completed (past UTC dates).")
-        logger.info(
-            f"Dates {date_from.strftime('%Y-%m-%d')} to {date_to.strftime('%Y-%m-%d')} are valid for processing."
-        )
-
-    def _check_date(self, cur: cursor, date_to_process: date) -> None:
-        if date_to_process >= datetime.now(timezone.utc).date():
-            raise InvalidDateError("The script can only run on dates that have already completed (past UTC dates).")
+    def _check_date(self, cur: cursor, date_to_process: date, skip_inserted_dates: bool = False) -> ExecutionDecision:
         cur.execute(processed_date_select_query, (date_to_process.strftime("%Y-%m-%d"),))
         if cur.fetchone():
-            raise InvalidDateError(
-                f"Data for {date_to_process} has already been processed. Please choose a different date."
-            )
+            if not skip_inserted_dates:
+                raise InvalidDateError(f"Data for {date_to_process} has already been processed. Please choose a different date.")
+            logger.warning(f"Data for {date_to_process} has already been processed. Continuing without inserting.")
+            return ExecutionDecision.SKIP
         logger.info(f"Date {date_to_process.strftime('%Y-%m-%d')} is valid for processing.")
+        return ExecutionDecision.OK
 
     def _insert_processed_date(self, cur: cursor, date_to_process: date) -> None:
         data_tuples = [(date_to_process.strftime("%Y-%m-%d"),)]

@@ -54,6 +54,13 @@ def parse_args() -> argparse.Namespace:
         help="Collect network measurements for a specific UTC date (format: yyyy-mm-dd).",
     )
 
+    parser.add_argument(
+        "-dr",
+        "--date-range",
+        type=str,
+        help="Collect network measurements for a specific date range (format: yyyy-mm-dd:yyyy-mm-dd). The first date is the start (left of :) and the second date is the end (right of :). The end date is required.",
+    )
+
     return parser.parse_args()
 
 
@@ -84,6 +91,8 @@ def main() -> None:
                 handler.update(args.update)
             if args.date:
                 handler.date(args.date)
+            if args.date_range:
+                handler.date_range(args.date_range)
     except psycopg2.OperationalError as e:
         logger.error(f"OperationalError: Failed to connect to the database - {e}")
     except psycopg2.InterfaceError as e:
