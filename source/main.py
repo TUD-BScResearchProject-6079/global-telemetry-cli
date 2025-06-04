@@ -1,13 +1,12 @@
 import argparse
-from datetime import datetime
 import os
 
 from __init__ import logger
 from dotenv import load_dotenv
 from enums import UpdateChoices
 from factory import Factory
+from handler import Handler
 import psycopg2
-from utils import parse_date_range
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,7 +44,7 @@ def parse_args() -> argparse.Namespace:
         "-u",
         type=str,
         choices=[update_choice.value for update_choice in UpdateChoices],
-        help="Choose the operation mode: fast, slow, or auto.",
+        help="Choose the update(s) to perform. Use 'asn' for updating ISNs, 'airport' for updating airport codes, and 'cities' for updating city names. You can specify multiple updates by separating them with commas (e.g., 'asn,airport').",
     )
 
     parser.add_argument(
@@ -72,44 +71,19 @@ def main() -> None:
             port=os.getenv("DB_PORT"),
         ) as conn:
             logger.info("Connected to the database successfully.")
-            factory = Factory(conn)
+            handler = Handler(Factory(conn))
             if args.drop:
-                confirm = input("Are you sure you want to drop all tables? (y/n): ").strip().lower()
-                if confirm == 'y':
-                    logger.info("Drop flag confirmed. Dropping all tables...")
-                    table_initializer = factory.get_table_initializer()
-                    table_initializer.drop_tables()
-                else:
-                    logger.info("Drop flag detected, but operation cancelled by user.")
+                handler.drop()
             if args.init:
-                logger.info("Initialization flag detected. Performing setup...")
-                table_initializer = factory.get_table_initializer()
-                table_initializer.initialize_tables()
+                handler.init()
             if args.update_best_servers:
-                start_date, end_date = parse_date_range(args.update_best_servers)
-                data_loader = factory.get_data_loader()
-                data_loader.update_best_servers(start_date, end_date)
+                handler.update_best_servers(args.update_best_servers)
             if args.update_countries_with_starlink:
-                start_date, end_date = parse_date_range(args.update_best_servers)
-                data_loader = factory.get_data_loader()
-                data_loader.update_countries_with_starlink(start_date, end_date)
+                handler.update_countries_with_starlink(args.update_countries_with_starlink)
             if args.update:
-                choice = UpdateChoices(args.update)
-                logger.info(f"Update choice selected: {choice}")
-                table_initializer = factory.get_table_initializer()
-                if choice == UpdateChoices.ASN_DATE:
-                    table_initializer.update_isns()
-                elif choice == UpdateChoices.AIRPORT_CODES:
-                    table_initializer.update_airport_codes()
-                elif choice == UpdateChoices.CITIES:
-                    table_initializer.update_cities()
+                handler.update(args.update)
             if args.date:
-                date = datetime.strptime(args.date, "%Y-%m-%d").date()
-                logger.info(f"Running with specified date: {date}")
-                data_loader = factory.get_data_loader()
-                data_loader.load_data(date)
-                data_processer = factory.get_data_processer()
-                data_processer.process_data()
+                handler.date(args.date)
 
     except Exception as e:
         logger.error(f"Application encountered an exception: {e}")

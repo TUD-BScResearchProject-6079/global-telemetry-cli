@@ -23,6 +23,6 @@ class Tables(Enum):
 
 
 class UpdateChoices(Enum):
-    ASN_DATE = ("asn",)
-    AIRPORT_CODES = ("airport",)
-    CITIES = ("cities",)
+    ASN_DATE = "asn"
+    AIRPORT_CODES = "airport"
+    CITIES = "cities"
