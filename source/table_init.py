@@ -22,7 +22,7 @@ from sql.create_queries import (
     processed_dates_create_query,
     unified_telemetry_create_query,
 )
-from sql.delete_queries import delete_all_from_table_query
+from sql.delete_queries import airport_codes_standardize_cities_query, delete_all_from_table_query
 from sql.drop_queries import drop_tables_query
 from sql.insert_queries import (
     airport_insert_query,
@@ -33,8 +33,6 @@ from sql.insert_queries import (
     ndt_best_server_insert_query,
 )
 from utils import delete_files, download_file, generate_cities_csv
-
-from source.sql.delete_queries import airport_codes_standardize_cities_query
 
 InsertTuple = Tuple[sql.SQL, sql.SQL | None, str, Optional[Callable[[pd.DataFrame], None]]]
 InsertData = Dict[Tables, InsertTuple]

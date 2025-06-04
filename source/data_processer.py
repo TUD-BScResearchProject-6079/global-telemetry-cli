@@ -2,17 +2,16 @@ from __init__ import logger
 from enums import Tables
 from logger import LogUtils
 from psycopg2.extensions import connection
-from sql.insert_queries import (
-    global_telemetry_from_cf_insert_query,
-    global_telemetry_from_ndt_insert_query,
-)
-
-from source.sql.delete_queries import (
+from sql.delete_queries import (
     cf_temp_delete_invalid_servers_query,
     delete_all_from_table_query,
     ndt_temp_delete_invalid_servers_query,
 )
-from source.sql.update_queries import (
+from sql.insert_queries import (
+    global_telemetry_from_cf_insert_query,
+    global_telemetry_from_ndt_insert_query,
+)
+from sql.update_queries import (
     cf_temp_standardize_cities_query,
     ndt_temp_standardize_client_cities_query,
     ndt_temp_standardize_server_cities_query,

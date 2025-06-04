@@ -1,24 +1,26 @@
 from datetime import datetime, timezone
 import functools
 import logging
+from logging import Logger
 import os
+from pathlib import Path
 import time
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 
 class LogUtils:
-    _logger = None
+    _logger: Optional[Logger] = None
+    _parent_dir: Path = (Path(__file__).parent / '..').resolve()
 
     @staticmethod
-    def init_logger(log_dir: str = 'logs') -> logging.Logger:
+    def init_logger(log_dir: str = 'logs') -> Logger:
         if LogUtils._logger:
             return LogUtils._logger
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logs_dir_path = os.path.join(os.path.abspath(os.path.join(current_dir, '..')), log_dir)
+        logs_dir_path = LogUtils._parent_dir / log_dir
         os.makedirs(logs_dir_path, exist_ok=True)
         utc_now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%SZ')
-        log_path = os.path.join(log_dir, f'{utc_now}.log')
+        log_path = logs_dir_path / f'{utc_now}.log'
 
         logging.Formatter.converter = time.gmtime
 
