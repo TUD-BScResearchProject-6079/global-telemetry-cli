@@ -1,4 +1,4 @@
-def get_cf_formatted_query(date: str, top_isns: str) -> str:
+def get_cf_formatted_query(date: str, top_asns: str) -> str:
     return f"""
     SELECT
         measurementUUID AS uuid,
@@ -21,10 +21,10 @@ def get_cf_formatted_query(date: str, top_isns: str) -> str:
     WHERE
         date = '{date}'
         AND clientCountry IS NOT NULL AND clientCountry <> ''
-        AND clientASN IN ({top_isns});"""
+        AND clientASN IN ({top_asns});"""
 
 
-def get_ndt_formatted_query(date: str, top_isns: str) -> str:
+def get_ndt_formatted_query(date: str, top_asns: str) -> str:
     return f"""
     SELECT
       a.UUID as uuid,
@@ -60,10 +60,10 @@ def get_ndt_formatted_query(date: str, top_isns: str) -> str:
           OR
         raw.Upload.ServerMeasurements[SAFE_OFFSET(ARRAY_LENGTH(raw.Upload.ServerMeasurements) - 1)].TCPInfo.RTT IS NOT NULL
       )
-      AND client.Network.ASNumber IN ({top_isns});"""
+      AND client.Network.ASNumber IN ({top_asns});"""
 
 
-def get_cf_best_servers_query(date_from: str, date_to: str, top_isns: str) -> str:
+def get_cf_best_servers_query(date_from: str, date_to: str, top_asns: str) -> str:
     return f"""
     WITH city_servers AS (
       SELECT
@@ -82,7 +82,7 @@ def get_cf_best_servers_query(date_from: str, date_to: str, top_isns: str) -> st
         AND clientCountry <> ''
         AND serverPoP IS NOT NULL
         AND serverPoP <> ''
-        AND clientASN IN  ({top_isns})
+        AND clientASN IN  ({top_asns})
     )
 
     SELECT DISTINCT
@@ -109,7 +109,7 @@ def get_cf_best_servers_query(date_from: str, date_to: str, top_isns: str) -> st
     """
 
 
-def get_ndt_best_servers_query(date_from: str, date_to: str, top_isns: str) -> str:
+def get_ndt_best_servers_query(date_from: str, date_to: str, top_asns: str) -> str:
     return f"""
     WITH server_for_client AS (
       SELECT
@@ -127,7 +127,7 @@ def get_ndt_best_servers_query(date_from: str, date_to: str, top_isns: str) -> s
         AND client.Geo.City IS NOT NULL
         AND client.Geo.City <> ''
         AND a.MeanThroughputMbps <> 0.0
-        AND client.Network.ASNumber IN ({top_isns})
+        AND client.Network.ASNumber IN ({top_asns})
     ),
 
     min_latencies AS (

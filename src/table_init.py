@@ -2,14 +2,15 @@ import gc
 from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple
 
-from __init__ import data_dir, logger
-from caida_api_queries import fetch_asn_data
-from enums import CsvFiles, Tables
-from logger import LogUtils
 import pandas as pd
 from psycopg2 import sql
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import execute_values
+
+from __init__ import data_dir, logger
+from caida_api_queries import fetch_asn_data
+from enums import CsvFiles, Tables
+from logger import LogUtils
 from sql.create_queries import (
     airports_create_query,
     caida_asn_create_table_query,
@@ -94,7 +95,7 @@ class TableInitializer:
             logger.info("All tables created and data inserted successfully.")
 
     @LogUtils.log_function
-    def update_isns(self) -> None:
+    def update_asns(self) -> None:
         fetch_asn_data(CsvFiles.ASNS.value)
         with self._conn.cursor() as cur:
             self._clean_and_insert_data(cur, Tables.AS_STATISTICS)
@@ -107,7 +108,7 @@ class TableInitializer:
 
     @LogUtils.log_function
     def update_cities(self) -> None:
-        download_file('https://download.geonames.org/export/dump/cities1000.zip', 'cities.txt', unzip=True)
+        download_file('https://download.geonames.org/export/dump/cities15000.zip', 'cities.txt', unzip=True)
         download_file('https://download.geonames.org/export/dump/admin1CodesASCII.txt', 'regions.txt')
         generate_cities_csv('cities.txt', 'regions.txt', CsvFiles.CITIES.value)
         delete_files(['cities.txt', 'regions.txt'])
@@ -117,6 +118,7 @@ class TableInitializer:
     def _clean_and_insert_data(self, cur: cursor, table: Tables) -> None:
         delete_query = delete_all_from_table_query(table.value)
         cur.execute(delete_query)
+        logger.info(f"Deleted all rows from {table.value} table.")
         self._process_and_insert_data(cur, self._insert_data[table])
 
     def _process_and_insert_data(self, cur: cursor, insert_tuple: InsertTuple) -> None:
@@ -148,10 +150,10 @@ class TableInitializer:
                 clean_dataframe(df)
             data_tuples = [tuple(x) for x in df.to_records(index=False)]
             execute_values(cur, insert_query, data_tuples)
-            logger.info(f"Successfully inserted data from {csv_file_path}")
+            logger.info(f"Inserted {len(data_tuples)} rows into the database from {csv_file_path}.")
 
         except Exception as e:
-            logger.error(f"Error inserting data from {csv_file_path}: {e}")
+            logger.error(f"Exception inserting data from {csv_file_path}: {e}")
             raise e
         finally:
             if df is not None:

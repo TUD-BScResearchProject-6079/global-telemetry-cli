@@ -17,7 +17,7 @@ class Tables(Enum):
     CF_BEST_SERVERS = 'cf_server_for_city'
     AS_STATISTICS = 'as_statistics'
     COUNTRIES_WITH_STARLINK_MEASUREMENTS = 'countries_with_starlink_measurements'
-    NDT7_TEMP = 'ndt_temp'
+    NDT7_TEMP = 'ndt7_temp'
     CF_TEMP = 'cf_temp'
     UNIFIED_TELEMETRY = 'unified_telemetry'
 

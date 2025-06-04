@@ -1,20 +1,21 @@
 import argparse
 import os
 
-from __init__ import logger
 from dotenv import load_dotenv
+import psycopg2
+
+from __init__ import logger
 from enums import UpdateChoices
 from factory import Factory
 from handler import Handler
-import psycopg2
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Global Telemetry System")
 
     parser.add_argument(
-        "--init",
         "-i",
+        "--init",
         action="store_true",
         help="Initialize the database by creating and populating the required tables.",
     )
@@ -26,30 +27,29 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--update-best-servers",
         "-ubs",
+        "--update-best-servers",
         type=str,
         help="Update best server for a specific date range. Use format yyyy-mm-dd or yyyy-mm-dd:yyyy-mm-dd, where the first date is the start (left of :) and the second date is the end (right of :). The end date is optional.",
     )
 
     parser.add_argument(
-        "--update-countries-with-starlink",
         "-ucws",
+        "--update-countries-with-starlink",
         type=str,
         help="Update countries with Starlink for a specific date range. Use format yyyy-mm-dd or yyyy-mm-dd:yyyy-mm-dd, where the first date is the start (left of :) and the second date is the end (right of :). The end date is optional.",
     )
 
     parser.add_argument(
-        "--update",
         "-u",
+        "--update",
         type=str,
-        choices=[update_choice.value for update_choice in UpdateChoices],
-        help="Choose the update(s) to perform. Use 'asn' for updating ISNs, 'airport' for updating airport codes, and 'cities' for updating city names. You can specify multiple updates by separating them with commas (e.g., 'asn,airport').",
+        help=f"Choices: {[update_choice.value for update_choice in UpdateChoices]}. Choose the update(s) to perform. Use 'asn' for updating ASNs, 'airport' for updating airport codes, and 'cities' for updating city names. You can specify multiple updates by separating them with commas (e.g., 'asn,airport').",
     )
 
     parser.add_argument(
-        "--date",
         "-d",
+        "--date",
         type=str,
         help="Collect network measurements for a specific UTC date (format: yyyy-mm-dd).",
     )
@@ -84,9 +84,14 @@ def main() -> None:
                 handler.update(args.update)
             if args.date:
                 handler.date(args.date)
-
-    except Exception as e:
-        logger.error(f"Application encountered an exception: {e}")
+    except psycopg2.OperationalError as e:
+        logger.error(f"OperationalError: Failed to connect to the database - {e}")
+    except psycopg2.InterfaceError as e:
+        logger.error(f"InterfaceError: Problem with the connection interface - {e}")
+    except psycopg2.DatabaseError as e:
+        logger.error(f"DatabaseError: General database error occurred - {e}")
+    except Exception:
+        logger.error("Application exited with an error.")
         return
 
     logger.info("Application exited successfully.")

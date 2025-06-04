@@ -2,9 +2,10 @@ from datetime import date, datetime, timezone
 import io
 import zipfile
 
-from __init__ import data_dir, logger
 import pandas as pd
 import requests
+
+from __init__ import data_dir, logger
 
 
 def download_file(url: str, file_name: str, unzip: bool = False) -> None:
@@ -26,6 +27,12 @@ def download_file(url: str, file_name: str, unzip: bool = False) -> None:
         with open(file_path, "wb") as f:
             f.write(response.content)
         logger.info(f"File saved to: {file_path}")
+
+
+def save_dataframe_to_csv(df: pd.DataFrame, file_name: str) -> None:
+    file_path = data_dir / file_name
+    df.to_csv(file_path, index=False)
+    logger.info(f"DataFrame saved to: {file_path}")
 
 
 def delete_files(file_names: list[str]) -> None:
@@ -133,17 +140,23 @@ def generate_cities_csv(cities_txt: str, regions_txt: str, final_file_name: str)
             "country_code",
         ]
     )
+    final_df = final_df[final_df["asciiname"].notna() & final_df["asciiname"].ne("") & final_df["country_code"].notna()]
 
     final_df.to_csv(data_dir / final_file_name, index=False)
     logger.info(f"Cities csv successfully created {len(final_df)} records from {cities_txt} and {regions_txt}.")
 
 
+def parse_date(date_str: str) -> date:
+    try:
+        return datetime.strptime(date_str.strip(), "%Y-%m-%d").date()
+    except ValueError as e:
+        logger.error(f"Invalid date format: {date_str}. Expected format: yyyy-mm-dd.")
+        raise e
+
+
 def parse_date_range(date_range: str) -> tuple[date, date]:
     if ':' in date_range:
         start_date, end_date = date_range.split(':', 1)
-        return (
-            datetime.strptime(start_date.strip(), "%Y-%m-%d").date(),
-            datetime.strptime(end_date.strip(), "%Y-%m-%d").date(),
-        )
+        return (parse_date(start_date), parse_date(end_date))
     else:
-        return datetime.strptime(date_range.strip(), "%Y-%m-%d").date(), datetime.now(timezone.utc).date()
+        return parse_date(date_range), datetime.now(timezone.utc).date()

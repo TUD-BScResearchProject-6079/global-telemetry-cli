@@ -48,8 +48,8 @@ cities_create_query = sql.SQL(
         name2 character varying(200) COLLATE pg_catalog."default",
         name3 character varying(200) COLLATE pg_catalog."default",
         name4 character varying(200) COLLATE pg_catalog."default",
-        region character varying(200) COLLATE pg_catalog."default" NOT NULL,
-        country_code character(2) COLLATE pg_catalog."default"
+        region character varying(200) COLLATE pg_catalog."default",
+        country_code character(2) COLLATE pg_catalog."default" NOT NULL
     )
 """
 )

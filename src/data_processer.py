@@ -1,7 +1,8 @@
+from psycopg2.extensions import connection
+
 from __init__ import logger
 from enums import Tables
 from logger import LogUtils
-from psycopg2.extensions import connection
 from sql.delete_queries import (
     cf_temp_delete_invalid_servers_query,
     delete_all_from_table_query,

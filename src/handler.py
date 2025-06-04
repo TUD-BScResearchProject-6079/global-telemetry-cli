@@ -1,10 +1,7 @@
-from datetime import datetime
-
 from __init__ import logger
+from enums import UpdateChoices
 from factory import Factory
-from utils import parse_date_range
-
-from source.enums import UpdateChoices
+from utils import parse_date, parse_date_range
 
 
 class Handler:
@@ -41,14 +38,14 @@ class Handler:
         table_initializer = self._factory.get_table_initializer()
         for choice in choices:
             if choice == UpdateChoices.ASN_DATE:
-                table_initializer.update_isns()
+                table_initializer.update_asns()
             elif choice == UpdateChoices.AIRPORT_CODES:
                 table_initializer.update_airport_codes()
             elif choice == UpdateChoices.CITIES:
                 table_initializer.update_cities()
 
     def date(self, date_str: str) -> None:
-        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        date = parse_date(date_str)
         logger.info(f"Running with specified date: {date}")
         data_loader = self._factory.get_data_loader()
         data_loader.load_data(date)

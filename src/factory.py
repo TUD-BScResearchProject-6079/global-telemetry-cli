@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Optional
 
+from psycopg2.extensions import connection
+
 from data_loader import DataLoader
 from data_processer import DataProcesser
-from psycopg2.extensions import connection
 from table_init import TableInitializer
 
 
