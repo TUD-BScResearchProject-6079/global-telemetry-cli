@@ -11,3 +11,4 @@ pandas
 requests
 types-requests
 graphqlclient
+pytest
