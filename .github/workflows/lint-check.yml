@@ -1,4 +1,4 @@
-name: Lint and Type Check
+name: Build Check
 
 on:
   push:
@@ -27,3 +27,6 @@ jobs:
 
     - name: Run build
       run: ./build.sh
+    
+    - name: Run tests
+      run: pytest --maxfail=1 --disable-warnings -q

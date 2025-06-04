@@ -150,7 +150,7 @@ def parse_date(date_str: str) -> date:
     try:
         return datetime.strptime(date_str.strip(), "%Y-%m-%d").date()
     except ValueError as e:
-        logger.error(f"Invalid date format: {date_str}. Expected format: yyyy-mm-dd.")
+        logger.error(f"Invalid date format: {date_str}. Expected date format: yyyy-mm-dd.")
         raise e
 
 

@@ -135,7 +135,10 @@ global-telemetry-data-processing/
 │       ├── delete_queries.py
 │       └── ...
 ├── data/
-│   └── cities.csv                 # City reference data
+│   ├── cities.csv                 # City reference data
+│   └── ...
+├── test/
+│   └── ...
 ├── logs/                          # Log files (auto-generated)
 ├── .env                           # Environment configuration
 ├── requirements.txt               # Python dependencies
