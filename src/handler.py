@@ -1,4 +1,5 @@
 from datetime import timedelta
+
 from __init__ import logger
 from enums import ExecutionDecision, UpdateChoices
 from factory import Factory
@@ -52,7 +53,7 @@ class Handler:
         data_loader.load_data(date)
         data_processer = self._factory.get_data_processer()
         data_processer.process_data()
-    
+
     def date_range(self, date_range_str: str) -> None:
         start_date, end_date = parse_date_range(date_range_str)
         logger.info(f"Running with specified date range: {start_date} to {end_date}")

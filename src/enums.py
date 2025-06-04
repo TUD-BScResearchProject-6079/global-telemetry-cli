@@ -27,6 +27,7 @@ class UpdateChoices(Enum):
     AIRPORT_CODES = "airport"
     CITIES = "cities"
 
+
 class ExecutionDecision(Enum):
     OK = 0
     SKIP = 1

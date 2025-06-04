@@ -8,7 +8,7 @@ from psycopg2.extras import execute_values
 
 from __init__ import logger
 from custom_exceptions import InvalidDateError
-from enums import ExecutionDecision, CsvFiles, Tables
+from enums import CsvFiles, ExecutionDecision, Tables
 from logger import LogUtils
 from sql.bigquery_queries import (
     get_cf_best_servers_query,
@@ -41,7 +41,9 @@ class DataLoader:
     @LogUtils.log_function
     def load_data(self, date: date, skip_inserted_dates: bool = False) -> ExecutionDecision:
         with self._conn.cursor() as cur:
-            if (result := self._check_date(cur, date, skip_inserted_dates = skip_inserted_dates)) == ExecutionDecision.SKIP:
+            if (
+                result := self._check_date(cur, date, skip_inserted_dates=skip_inserted_dates)
+            ) == ExecutionDecision.SKIP:
                 logger.info(f"Skipping data loading for {date.strftime('%Y-%m-%d')} as it has already been processed.")
                 return result
             top_asns = self._get_top_asns(cur)
@@ -57,7 +59,9 @@ class DataLoader:
     def update_best_servers(self, date_from: date, date_to: date) -> None:
         with self._conn.cursor() as cur:
             top_asns = self._get_top_asns(cur)
-            ndt_query = get_ndt_best_servers_query(date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns)
+            ndt_query = get_ndt_best_servers_query(
+                date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns
+            )
             cf_query = get_cf_best_servers_query(date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns)
             delete_ndt_query = delete_all_from_table_query(Tables.NDT_BEST_SERVERS.value)
             cur.execute(delete_ndt_query)
@@ -94,7 +98,9 @@ class DataLoader:
         cur.execute(processed_date_select_query, (date_to_process.strftime("%Y-%m-%d"),))
         if cur.fetchone():
             if not skip_inserted_dates:
-                raise InvalidDateError(f"Data for {date_to_process} has already been processed. Please choose a different date.")
+                raise InvalidDateError(
+                    f"Data for {date_to_process} has already been processed. Please choose a different date."
+                )
             logger.warning(f"Data for {date_to_process} has already been processed. Continuing without inserting.")
             return ExecutionDecision.SKIP
         logger.info(f"Date {date_to_process.strftime('%Y-%m-%d')} is valid for processing.")

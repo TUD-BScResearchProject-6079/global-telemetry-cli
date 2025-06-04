@@ -69,17 +69,23 @@ python src/main.py --date 2024-01-15
 ```
 Downloads and processes telemetry data for a specific date (YYYY-MM-DD format).
 
+### Process Date Range
+```sh
+python src/main.py --date-range 2024-01-01:2024-01-31
+```
+Downloads and processes telemetry data for a date range (YYYY-MM-DD:YYYY-MM-DD format).
+
 ### Update Best Servers
 ```sh
 python src/main.py --update-best-servers 2024-01-01:2024-01-31
 ```
-Updates best server mappings for a date range.
+Updates best server mappings for a date range. End date is optional - if not provided, defaults to yesterday.
 
 ### Update Countries with Starlink
 ```sh
 python src/main.py --update-countries-with-starlink 2024-01-01:2024-01-31
 ```
-Updates the list of countries with Starlink measurements.
+Updates the list of countries with Starlink measurements. End date is optional - if not provided, defaults to yesterday.
 
 ### Update Reference Data
 ```sh
@@ -98,8 +104,9 @@ python src/main.py --drop
 |--------|-------------|
 | `--init` | Initialize database tables and populate with reference data |
 | `--date YYYY-MM-DD` | Process telemetry data for specific date |
-| `--update-best-servers DATE_RANGE` | Update best server mappings |
-| `--update-countries-with-starlink DATE_RANGE` | Update Starlink country data |
+| `--date-range YYYY-MM-DD:YYYY-MM-DD` | Process telemetry data for date range |
+| `--update-best-servers DATE_RANGE` | Update best server mappings (end date optional) |
+| `--update-countries-with-starlink DATE_RANGE` | Update Starlink country data (end date optional) |
 | `--update CHOICES` | Update reference data (asn, airport, cities) |
 | `--drop` | Drop all database tables |
 
