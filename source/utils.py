@@ -1,3 +1,4 @@
+from datetime import date, datetime, timezone
 import io
 import zipfile
 
@@ -135,3 +136,14 @@ def generate_cities_csv(cities_txt: str, regions_txt: str, final_file_name: str)
 
     final_df.to_csv(data_dir / final_file_name, index=False)
     logger.info(f"Cities csv successfully created {len(final_df)} records from {cities_txt} and {regions_txt}.")
+
+
+def parse_date_range(date_range: str) -> tuple[date, date]:
+    if ':' in date_range:
+        start_date, end_date = date_range.split(':', 1)
+        return (
+            datetime.strptime(start_date.strip(), "%Y-%m-%d").date(),
+            datetime.strptime(end_date.strip(), "%Y-%m-%d").date(),
+        )
+    else:
+        return datetime.strptime(date_range.strip(), "%Y-%m-%d").date(), datetime.now(timezone.utc).date()

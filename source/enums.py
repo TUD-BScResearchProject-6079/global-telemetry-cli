@@ -20,3 +20,9 @@ class Tables(Enum):
     NDT7_TEMP = 'ndt_temp'
     CF_TEMP = 'cf_temp'
     UNIFIED_TELEMETRY = 'unified_telemetry'
+
+
+class UpdateChoices(Enum):
+    ASN_DATE = ("asn",)
+    AIRPORT_CODES = ("airport",)
+    CITIES = ("cities",)
