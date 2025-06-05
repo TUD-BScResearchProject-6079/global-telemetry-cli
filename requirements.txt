@@ -12,3 +12,4 @@ requests
 types-requests
 graphqlclient
 pytest
+freezegun

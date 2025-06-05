@@ -1,22 +1,17 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
+from freezegun import freeze_time
 
 import pytest
 
-from src.custom_exceptions import InvalidDateError, InvalidDateRangeError
-from src.utils import parse_date, parse_date_range
+from src.utils import parse_date, parse_date_range, InvalidDateError, InvalidDateRangeError
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_valid(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2024-05-12")
+def test_parse_date_valid(mock_logger: MagicMock) -> None:
     expected_date = datetime(2023, 10, 1).date()
     date = expected_date.strftime("%Y-%m-%d")
-
-    now_date = expected_date + timedelta(weeks=20, days=25)
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     result = parse_date(date)
     assert result == expected_date
@@ -25,15 +20,10 @@ def test_parse_date_valid(mock_datetime: MagicMock, mock_logger: MagicMock) -> N
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_in_the_future(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2022-05-12")
+def test_parse_date_in_the_future(mock_logger: MagicMock) -> None:
     expected_date = datetime(2023, 10, 1).date()
     date_str = expected_date.strftime("%Y-%m-%d")
-
-    now_date = expected_date - timedelta(weeks=20, days=25)
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     with pytest.raises(InvalidDateError):
         result = parse_date(date_str)
@@ -46,15 +36,10 @@ def test_parse_date_in_the_future(mock_datetime: MagicMock, mock_logger: MagicMo
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_today(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2023-10-01")
+def test_parse_date_today(mock_logger: MagicMock) -> None:
     expected_date = datetime(2023, 10, 1).date()
     date_str = expected_date.strftime("%Y-%m-%d")
-
-    now_date = expected_date
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     with pytest.raises(InvalidDateError):
         result = parse_date(date_str)
@@ -67,15 +52,10 @@ def test_parse_date_today(mock_datetime: MagicMock, mock_logger: MagicMock) -> N
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_invalid_format(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2025-10-01")
+def test_parse_date_invalid_format(mock_logger: MagicMock) -> None:
     date = datetime(2024, 11, 15).date()
     date_str = date.strftime("%d-%m-%Y")
-
-    now_date = date + timedelta(weeks=20, days=25)
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     with pytest.raises(ValueError):
         result = parse_date(date_str)
@@ -86,17 +66,12 @@ def test_parse_date_invalid_format(mock_datetime: MagicMock, mock_logger: MagicM
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_range_valid(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2025-10-01")
+def test_parse_date_range_valid(mock_logger: MagicMock) -> None:
     expected_start = datetime(2023, 10, 1).date()
     expected_end = datetime(2023, 10, 31).date()
     date_range = f"{expected_start.strftime('%Y-%m-%d')}:{expected_end.strftime('%Y-%m-%d')}"
 
-    now_date = expected_end + timedelta(weeks=20, days=25)
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
-
     start_date, end_date = parse_date_range(date_range)
     assert start_date == expected_start
     assert end_date == expected_end
@@ -105,17 +80,12 @@ def test_parse_date_range_valid(mock_datetime: MagicMock, mock_logger: MagicMock
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_range_valid_no_right(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2025-01-25")
+def test_parse_date_range_valid_no_right(mock_logger: MagicMock) -> None:
     expected_start = datetime(2024, 11, 12).date()
     expected_end = datetime(2025, 1, 24).date()
     date_range = expected_start.strftime("%Y-%m-%d")
 
-    next_day = expected_end + timedelta(days=1)
-    mock_datetime.now.return_value = datetime(next_day.year, next_day.month, next_day.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
-
     start_date, end_date = parse_date_range(date_range)
     assert start_date == expected_start
     assert end_date == expected_end
@@ -124,16 +94,11 @@ def test_parse_date_range_valid_no_right(mock_datetime: MagicMock, mock_logger: 
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_range_invalid_format(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2025-10-01")
+def test_parse_date_range_invalid_format(mock_logger: MagicMock) -> None:
     expected_start = datetime(2024, 11, 12).date()
     expected_end = datetime(2025, 1, 24).date()
     date_range = f"{expected_start.strftime('%Y-%m-%d')} to {expected_end.strftime('%Y-%m-%d')}"
-
-    now_date = expected_end + timedelta(weeks=20, days=25)
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     with pytest.raises(ValueError):
         start_date, end_date = parse_date_range(date_range)
@@ -145,18 +110,13 @@ def test_parse_date_range_invalid_format(mock_datetime: MagicMock, mock_logger: 
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_range_start_greater_than_end(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2025-10-01")
+def test_parse_date_range_start_greater_than_end(mock_logger: MagicMock) -> None:
     expected_start = datetime(2024, 11, 12).date()
     expected_end = expected_start - timedelta(days=15)
     start_str = expected_start.strftime('%Y-%m-%d')
     end_str = expected_end.strftime('%Y-%m-%d')
     date_range = f"{start_str}:{end_str}"
-
-    now_date = expected_start + timedelta(weeks=20, days=25)
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     with pytest.raises(InvalidDateRangeError):
         start_date, end_date = parse_date_range(date_range)
@@ -170,18 +130,13 @@ def test_parse_date_range_start_greater_than_end(mock_datetime: MagicMock, mock_
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_range_end_in_future(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2024-11-22")
+def test_parse_date_range_end_in_future(mock_logger: MagicMock) -> None:
     expected_start = datetime(2024, 11, 12).date()
     expected_end = expected_start + timedelta(days=15)
     start_str = expected_start.strftime('%Y-%m-%d')
     end_str = expected_end.strftime('%Y-%m-%d')
     date_range = f"{start_str}:{end_str}"
-
-    now_date = expected_start + timedelta(days=10)
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     with pytest.raises(InvalidDateError):
         start_date, end_date = parse_date_range(date_range)
@@ -195,18 +150,13 @@ def test_parse_date_range_end_in_future(mock_datetime: MagicMock, mock_logger: M
 
 
 @patch("src.utils.logger")
-@patch("src.utils.datetime")
-def test_parse_date_range_start_today(mock_datetime: MagicMock, mock_logger: MagicMock) -> None:
+@freeze_time("2024-11-12")
+def test_parse_date_range_start_today( mock_logger: MagicMock) -> None:
     expected_start = datetime(2024, 11, 12).date()
     expected_end = expected_start + timedelta(days=15)
     start_str = expected_start.strftime('%Y-%m-%d')
     end_str = expected_end.strftime('%Y-%m-%d')
     date_range = f"{start_str}:{end_str}"
-
-    now_date = expected_start
-    mock_datetime.now.return_value = datetime(now_date.year, now_date.month, now_date.day, tzinfo=timezone.utc)
-    mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-    mock_datetime.strptime = datetime.strptime
 
     with pytest.raises(InvalidDateError):
         start_date, end_date = parse_date_range(date_range)
