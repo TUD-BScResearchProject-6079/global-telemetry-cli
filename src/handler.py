@@ -46,13 +46,13 @@ class Handler:
             elif choice == UpdateChoices.CITIES:
                 table_initializer.update_cities()
 
-    def date(self, date_str: str) -> None:
+    def date(self, date_str: str, skip_inserted_dates: bool=False) -> None:
         date = parse_date(date_str)
         logger.info(f"Running with specified date: {date}")
         data_loader = self._factory.get_data_loader()
-        data_loader.load_data(date)
-        data_processer = self._factory.get_data_processer()
-        data_processer.process_data()
+        if data_loader.load_data(date, skip_inserted_dates=skip_inserted_dates) == ExecutionDecision.OK:
+            data_processer = self._factory.get_data_processer()
+            data_processer.process_data()
 
     def date_range(self, date_range_str: str) -> None:
         start_date, end_date = parse_date_range(date_range_str)
