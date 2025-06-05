@@ -46,7 +46,7 @@ class Handler:
             elif choice == UpdateChoices.CITIES:
                 table_initializer.update_cities()
 
-    def date(self, date_str: str, skip_inserted_dates: bool=False) -> None:
+    def date(self, date_str: str, skip_inserted_dates: bool = False) -> None:
         date = parse_date(date_str)
         logger.info(f"Running with specified date: {date}")
         data_loader = self._factory.get_data_loader()
