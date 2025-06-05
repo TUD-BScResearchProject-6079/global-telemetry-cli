@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
-from freezegun import freeze_time
 
+from freezegun import freeze_time
 import pytest
 
-from src.utils import parse_date, parse_date_range, InvalidDateError, InvalidDateRangeError
+from src.utils import InvalidDateError, InvalidDateRangeError, parse_date, parse_date_range
 
 
 @patch("src.utils.logger")
@@ -151,7 +151,7 @@ def test_parse_date_range_end_in_future(mock_logger: MagicMock) -> None:
 
 @patch("src.utils.logger")
 @freeze_time("2024-11-12")
-def test_parse_date_range_start_today( mock_logger: MagicMock) -> None:
+def test_parse_date_range_start_today(mock_logger: MagicMock) -> None:
     expected_start = datetime(2024, 11, 12).date()
     expected_end = expected_start + timedelta(days=15)
     start_str = expected_start.strftime('%Y-%m-%d')
