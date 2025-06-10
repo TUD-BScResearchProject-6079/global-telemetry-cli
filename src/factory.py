@@ -4,9 +4,9 @@ from typing import Optional
 
 from psycopg2.extensions import connection
 
-from src.data_loader import DataLoader
-from src.data_processer import DataProcesser
-from src.table_init import TableInitializer
+from .data_loader import DataLoader
+from .data_processer import DataProcesser
+from .table_init import TableInitializer
 
 
 class Factory:

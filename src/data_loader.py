@@ -6,19 +6,19 @@ from psycopg2 import sql
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import execute_values
 
-from src.__init__ import logger
-from src.custom_exceptions import InvalidDateError
-from src.enums import CsvFiles, ExecutionDecision, Tables
-from src.logger import LogUtils
-from src.sql.bigquery_queries import (
+from .__init__ import logger
+from .custom_exceptions import InvalidDateError
+from .enums import CsvFiles, ExecutionDecision, Tables
+from .logger import LogUtils
+from .sql.bigquery_queries import (
     get_cf_best_servers_query,
     get_cf_formatted_query,
     get_countries_with_starlink_query,
     get_ndt_best_servers_query,
     get_ndt_formatted_query,
 )
-from src.sql.delete_queries import delete_all_from_table_query
-from src.sql.insert_queries import (
+from .sql.delete_queries import delete_all_from_table_query
+from .sql.insert_queries import (
     cf_best_server_insert_query,
     cf_temp_insert_query,
     countries_with_starlink_measurements_insert_query,
@@ -26,11 +26,11 @@ from src.sql.insert_queries import (
     ndt_temp_insert_query,
     processed_date_insert_query,
 )
-from src.sql.select_queries import (
+from .sql.select_queries import (
     processed_date_select_query,
     top_five_isps_countries_with_starlink_select_query,
 )
-from src.utils import save_dataframe_to_csv
+from .utils import save_dataframe_to_csv
 
 
 class DataLoader:

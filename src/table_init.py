@@ -7,11 +7,11 @@ from psycopg2 import sql
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import execute_values
 
-from src.__init__ import data_dir, logger
-from src.caida_api_queries import fetch_asn_data
-from src.enums import CsvFiles, Tables
-from src.logger import LogUtils
-from src.sql.create_queries import (
+from .__init__ import data_dir, logger
+from .caida_api_queries import fetch_asn_data
+from .enums import CsvFiles, Tables
+from .logger import LogUtils
+from .sql.create_queries import (
     airports_create_query,
     caida_asn_create_table_query,
     cf_best_servers_create_query,
@@ -23,9 +23,9 @@ from src.sql.create_queries import (
     processed_dates_create_query,
     unified_telemetry_create_query,
 )
-from src.sql.delete_queries import airport_codes_standardize_cities_query, delete_all_from_table_query
-from src.sql.drop_queries import drop_tables_query
-from src.sql.insert_queries import (
+from .sql.delete_queries import airport_codes_standardize_cities_query, delete_all_from_table_query
+from .sql.drop_queries import drop_tables_query
+from .sql.insert_queries import (
     airport_insert_query,
     caida_asn_insert_query,
     cf_best_server_insert_query,
@@ -33,7 +33,7 @@ from src.sql.insert_queries import (
     countries_with_starlink_measurements_insert_query,
     ndt_best_server_insert_query,
 )
-from src.utils import delete_files, download_file, generate_cities_csv
+from .utils import delete_files, download_file, generate_cities_csv
 
 InsertTuple = Tuple[sql.SQL, sql.SQL | None, str, Optional[Callable[[pd.DataFrame], None]]]
 InsertData = Dict[Tables, InsertTuple]

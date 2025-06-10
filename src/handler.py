@@ -1,9 +1,9 @@
 from datetime import timedelta
 
-from src.__init__ import logger
-from src.enums import ExecutionDecision, UpdateChoices
-from src.factory import Factory
-from src.utils import parse_date, parse_date_range
+from .__init__ import logger
+from .enums import ExecutionDecision, UpdateChoices
+from .factory import Factory
+from .utils import parse_date, parse_date_range
 
 
 class Handler:

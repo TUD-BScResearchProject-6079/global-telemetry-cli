@@ -5,8 +5,8 @@ import zipfile
 import pandas as pd
 import requests
 
-from src.__init__ import data_dir, logger
-from src.custom_exceptions import InvalidDateError, InvalidDateRangeError
+from .__init__ import data_dir, logger
+from .custom_exceptions import InvalidDateError, InvalidDateRangeError
 
 
 def download_file(url: str, file_name: str, unzip: bool = False) -> None:
