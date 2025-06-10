@@ -169,7 +169,7 @@ def parse_date_range(date_range: str) -> tuple[date, date]:
     end_date = parse_date(parts[1]) if len(parts) > 1 else datetime.now(timezone.utc).date() - timedelta(days=1)
     if start_date > end_date:
         logger.error(
-            f"Invalid date range: {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}. Start date cannot be after end date."
+            f"Invalid date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}. Start date cannot be after end date."
         )
         raise InvalidDateRangeError(start_date, end_date)
     return (start_date, end_date)
