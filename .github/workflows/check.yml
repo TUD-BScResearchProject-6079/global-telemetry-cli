@@ -1,4 +1,4 @@
-name: Build Check
+name: Check
 
 on:
   push:
@@ -22,11 +22,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Make build.sh executable
-      run: chmod +x ./build.sh
+    - name: Make check.sh executable
+      run: chmod +x ./check.sh
 
-    - name: Run build
-      run: ./build.sh
+    - name: Run check
+      run: ./check.sh
     
     - name: Run tests
       run: pytest --maxfail=1 --disable-warnings -q
