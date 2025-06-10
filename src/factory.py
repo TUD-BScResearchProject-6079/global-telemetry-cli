@@ -4,9 +4,9 @@ from typing import Optional
 
 from psycopg2.extensions import connection
 
-from data_loader import DataLoader
-from data_processer import DataProcesser
-from table_init import TableInitializer
+from src.data_loader import DataLoader
+from src.data_processer import DataProcesser
+from src.table_init import TableInitializer
 
 
 class Factory:
@@ -16,9 +16,9 @@ class Factory:
         if Factory._factory is not None:
             raise Exception("Factory instance already exists. Use init_factory() instead.")
         self._conn = conn
-        self._table_initializer = None
-        self._data_loader = None
-        self._data_processer = None
+        self._table_initializer: Optional[TableInitializer] = None
+        self._data_loader: Optional[DataLoader] = None
+        self._data_processer: Optional[DataProcesser] = None
         self._conn = conn
 
     @staticmethod

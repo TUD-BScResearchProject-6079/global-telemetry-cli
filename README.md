@@ -59,43 +59,43 @@ The main entry point is `src/main.py` with various command-line options:
 
 ### Initialize Database
 ```sh
-python src/main.py --init
+python -m src.main --init
 ```
 Creates all required tables and populates them with initial data.
 
 ### Process Daily Data
 ```sh
-python src/main.py --date 2024-01-15
+python -m src.main --date 2024-01-15
 ```
 Downloads and processes telemetry data for a specific date (YYYY-MM-DD format).
 
 ### Process Date Range
 ```sh
-python src/main.py --date-range 2024-01-01:2024-01-31
+python -m src.main --date-range 2024-01-01:2024-01-31
 ```
 Downloads and processes telemetry data for a date range (YYYY-MM-DD:YYYY-MM-DD format).
 
 ### Update Best Servers
 ```sh
-python src/main.py --update-best-servers 2024-01-01:2024-01-31
+python -m src.main --update-best-servers 2024-01-01:2024-01-31
 ```
 Updates best server mappings for a date range. End date is optional - if not provided, defaults to yesterday.
 
 ### Update Countries with Starlink
 ```sh
-python src/main.py --update-countries-with-starlink 2024-01-01:2024-01-31
+python -m src.main --update-countries-with-starlink 2024-01-01:2024-01-31
 ```
 Updates the list of countries with Starlink measurements. End date is optional - if not provided, defaults to yesterday.
 
 ### Update Reference Data
 ```sh
-python src/main.py --update asn,airport,cities
+python -m src.main --update asn,airport,cities
 ```
 Updates ASN data, airport codes, and city information.
 
 ### Drop All Tables (Use with caution!)
 ```sh
-python src/main.py --drop
+python -m src.main --drop
 ```
 
 ## Command Line Options
