@@ -40,7 +40,6 @@ class TableInitializer:
                         data['cleaning_fn'],
                     )
             self._conn.commit()
-            logger.info("All tables created and data inserted successfully.")
 
     def _table_exists(self, cur: cursor, table_name: Tables) -> bool:
         cur.execute(get_check_table_exists_query(table_name.value))
