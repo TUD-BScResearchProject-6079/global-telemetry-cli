@@ -14,7 +14,8 @@ This project implements a comprehensive data processing system that merges NDT7 
 ## Requirements
 
 - **Python version:** 3.13
-- **Database:** PostgreSQL
+- **Database:** PostgreSQL (You must have your own PostgreSQL database instance to connect to)
+- **PostgreSQL Driver:** For installing the `psycopg2` library.
 - **Google Cloud:** BigQuery access for M-Lab datasets
 - Recommended: Use a virtual environment (e.g., `venv` or `virtualenv`)
 
@@ -50,6 +51,8 @@ This project implements a comprehensive data processing system that merges NDT7 
    DB_PASSWORD=<your_password>
    DB_NAME=<your_database_name>
    ```
+
+**Note:** The PostgreSQL database specified in the environment variables must already exist before running the application.
 
 5. **Set up Google Cloud credentials** for BigQuery access (follow Google Cloud documentation)
 

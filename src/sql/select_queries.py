@@ -26,6 +26,7 @@ processed_date_select_query = sql.SQL(
 """
 )
 
+
 def get_check_table_exists_query(table_name: str) -> str:
     return f"""
     SELECT EXISTS (
