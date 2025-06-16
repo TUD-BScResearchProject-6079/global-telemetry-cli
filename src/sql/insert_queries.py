@@ -1,6 +1,6 @@
 from psycopg2 import sql
 
-processed_date_insert_query = sql.SQL(
+processed_dates_insert_query = sql.SQL(
     """
     INSERT INTO processed_dates (processed_date) VALUES %s
 """
@@ -45,6 +45,28 @@ cf_temp_insert_query = sql.SQL(
         client_region,
         client_country_code,
         server_airport_code,
+        asn,
+        packet_loss_rate,
+        download_throughput_mbps,
+        download_latency_ms,
+        download_jitter_ms,
+        upload_throughput_mbps,
+        upload_latency_ms,
+        upload_jitter_ms
+    ) VALUES %s
+"""
+)
+
+unified_telemetry_insert_query = sql.SQL(
+    """
+    INSERT INTO unified_telemetry (
+        uuid,
+        test_time,
+        client_city,
+        client_region,
+        client_country_code,
+        server_city,
+        server_country_code,
         asn,
         packet_loss_rate,
         download_throughput_mbps,

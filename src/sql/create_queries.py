@@ -2,11 +2,12 @@ from psycopg2 import sql
 
 processed_dates_create_query = sql.SQL(
     """
-    CREATE TABLE processed_dates (
-        processed_date DATE PRIMARY KEY NOT NULL
+    CREATE TABLE IF NOT EXISTS processed_dates (
+        processed_date DATE NOT NULL,
+        CONSTRAINT processed_dates_pkey PRIMARY KEY (processed_date)
     );
 
-    CREATE INDEX processed_date_hash_idx
+    CREATE INDEX IF NOT EXISTS processed_date_hash_idx
         ON processed_dates USING HASH (processed_date);
 """
 )
@@ -55,38 +56,47 @@ cities_create_query = sql.SQL(
 )
 
 
-airports_create_query = """
+airports_create_query = sql.SQL(
+    """
     CREATE TABLE IF NOT EXISTS airport_country (
-        airport_code CHAR(3) PRIMARY KEY,
+        airport_code CHAR(3) NOT NULL,
         country_code CHAR(2) NOT NULL,
-        airport_city VARCHAR(255)
+        airport_city VARCHAR(255),
+        CONSTRAINT airport_country_pkey PRIMARY KEY (airport_code)
     );
 """
+)
 
 
-ndt_best_servers_create_query = """
+ndt_best_servers_create_query = sql.SQL(
+    """
     CREATE TABLE IF NOT EXISTS ndt_server_for_city (
         client_city VARCHAR(255) NOT NULL,
         client_country_code CHAR(2) NOT NULL,
         server_city VARCHAR(255) NOT NULL,
-        server_country_code CHAR(2) NOT NULL
+        server_country_code CHAR(2) NOT NULL,
+        CONSTRAINT ndt_server_for_city_pkey PRIMARY KEY (client_city, client_country_code, server_city, server_country_code)
     );
 """
+)
 
 
-cf_best_servers_create_query = """
+cf_best_servers_create_query = sql.SQL(
+    """
     CREATE TABLE IF NOT EXISTS cf_server_for_city (
         client_city VARCHAR(255) NOT NULL,
         client_country_code CHAR(2) NOT NULL,
-        server_airport_code CHAR(3) NOT NULL
+        server_airport_code CHAR(3) NOT NULL,
+        CONSTRAINT cf_server_for_city_pkey PRIMARY KEY (client_city, client_country_code, server_airport_code)
     );
 """
+)
 
 
 cf_temp_create_query = sql.SQL(
     """
     CREATE TABLE IF NOT EXISTS public.cf_temp (
-        uuid VARCHAR(255) COLLATE pg_catalog."default" PRIMARY KEY,
+        uuid VARCHAR(255) COLLATE pg_catalog."default" NOT NULL,
         test_time TIMESTAMP WITH TIME ZONE NOT NULL,
         client_city VARCHAR(255) COLLATE pg_catalog."default",
         client_region VARCHAR(255) COLLATE pg_catalog."default",
@@ -99,7 +109,8 @@ cf_temp_create_query = sql.SQL(
         download_jitter_ms NUMERIC(10, 5),
         upload_throughput_mbps NUMERIC(10, 5),
         upload_latency_ms INTEGER,
-        upload_jitter_ms NUMERIC(10, 5)
+        upload_jitter_ms NUMERIC(10, 5),
+        CONSTRAINT cf_temp_pkey PRIMARY KEY (uuid)
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS pk_cf_temp
@@ -132,7 +143,8 @@ cf_temp_create_query = sql.SQL(
 """
 )
 
-ndt_temp_create_query = """
+ndt_temp_create_query = sql.SQL(
+    """
     CREATE TABLE IF NOT EXISTS public.ndt7_temp
     (
         uuid character varying(255) COLLATE pg_catalog."default" NOT NULL,
@@ -181,6 +193,7 @@ ndt_temp_create_query = """
         (client_country_code COLLATE pg_catalog."default")
         TABLESPACE pg_default;
 """
+)
 
 
 unified_telemetry_create_query = sql.SQL(

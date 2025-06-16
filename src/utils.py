@@ -142,6 +142,7 @@ def generate_cities_csv(cities_txt: str, regions_txt: str, final_file_name: str)
         ]
     )
     final_df = final_df[final_df["asciiname"].notna() & final_df["asciiname"].ne("") & final_df["country_code"].notna()]
+    final_df = final_df.drop_duplicates(subset=["name", "asciiname", "region", "country_code"])
 
     final_df.to_csv(data_dir / final_file_name, index=False)
     logger.info(f"Cities csv successfully created {len(final_df)} records from {cities_txt} and {regions_txt}.")
@@ -173,3 +174,27 @@ def parse_date_range(date_range: str) -> tuple[date, date]:
         )
         raise InvalidDateRangeError(start_date, end_date)
     return (start_date, end_date)
+
+
+def clean_airport_codes(df: pd.DataFrame) -> None:
+    df.dropna(subset=["iata_code"], inplace=True)
+    for col in df.columns:
+        if col not in ["iso_country", "municipality", "iata_code"]:
+            df.drop(columns=col, inplace=True)
+    df.rename(
+        columns={"iso_country": "country_code", "municipality": "airport_city", "iata_code": "airport_code"},
+        inplace=True,
+    )
+
+
+def clean_cf_servers(df: pd.DataFrame) -> None:
+    df.rename(
+        columns={
+            "clientCity": "client_city",
+            "clientCountry": "client_country",
+            "serverPoP": "server_airport_code",
+        },
+        inplace=True,
+    )
+    mask = df["client_country"].str.len().ne(2) | df["server_airport_code"].str.len().ne(3)
+    df.drop(index=df[mask].index, inplace=True)

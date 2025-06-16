@@ -24,7 +24,7 @@ from .sql.insert_queries import (
     countries_with_starlink_measurements_insert_query,
     ndt_best_server_insert_query,
     ndt_temp_insert_query,
-    processed_date_insert_query,
+    processed_dates_insert_query,
 )
 from .sql.select_queries import (
     processed_date_select_query,
@@ -108,7 +108,7 @@ class DataLoader:
 
     def _insert_processed_date(self, cur: cursor, date_to_process: date) -> None:
         data_tuples = [(date_to_process.strftime("%Y-%m-%d"),)]
-        execute_values(cur, processed_date_insert_query, data_tuples)
+        execute_values(cur, processed_dates_insert_query, data_tuples)
         logger.info(f"Inserted processed date: {date_to_process.strftime('%Y-%m-%d')} into the database.")
 
     def _download_data(

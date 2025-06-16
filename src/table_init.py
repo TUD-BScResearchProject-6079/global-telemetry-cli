@@ -1,6 +1,6 @@
 import gc
 from pathlib import Path
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Optional
 
 import pandas as pd
 from psycopg2 import sql
@@ -11,88 +11,41 @@ from .__init__ import data_dir, logger
 from .caida_api_queries import fetch_asn_data
 from .enums import CsvFiles, Tables
 from .logger import LogUtils
-from .sql.create_queries import (
-    airports_create_query,
-    caida_asn_create_table_query,
-    cf_best_servers_create_query,
-    cf_temp_create_query,
-    cities_create_query,
-    countries_with_starlink_measurements_create_query,
-    ndt_best_servers_create_query,
-    ndt_temp_create_query,
-    processed_dates_create_query,
-    unified_telemetry_create_query,
-)
-from .sql.delete_queries import airport_codes_standardize_cities_query, delete_all_from_table_query
+from .sql.delete_queries import delete_all_from_table_query
 from .sql.drop_queries import drop_tables_query
-from .sql.insert_queries import (
-    airport_insert_query,
-    caida_asn_insert_query,
-    cf_best_server_insert_query,
-    cities_insert_query,
-    countries_with_starlink_measurements_insert_query,
-    ndt_best_server_insert_query,
-)
+from .sql.select_queries import get_check_table_exists_query
+from .table_data import CleanDataframeFn, table_data
 from .utils import delete_files, download_file, generate_cities_csv
-
-InsertTuple = Tuple[sql.SQL, sql.SQL | None, str, Optional[Callable[[pd.DataFrame], None]]]
-InsertData = Dict[Tables, InsertTuple]
 
 
 class TableInitializer:
     def __init__(self, conn: connection) -> None:
         self._conn = conn
-        self._create_queries = [
-            processed_dates_create_query,
-            caida_asn_create_table_query,
-            countries_with_starlink_measurements_create_query,
-            cities_create_query,
-            airports_create_query,
-            ndt_best_servers_create_query,
-            cf_best_servers_create_query,
-            cf_temp_create_query,
-            ndt_temp_create_query,
-            unified_telemetry_create_query,
-        ]
-
-        self._insert_data: InsertData = {
-            Tables.CITIES: (cities_insert_query, None, CsvFiles.CITIES.value, None),
-            Tables.AIRPORT_CODES: (
-                airport_insert_query,
-                airport_codes_standardize_cities_query,
-                CsvFiles.AIRPORT_CODES.value,
-                TableInitializer._clean_airport_codes,
-            ),
-            Tables.NDT_BEST_SERVERS: (
-                ndt_best_server_insert_query,
-                None,
-                CsvFiles.NDT_BEST_SERVERS.value,
-                None,
-            ),
-            Tables.CF_BEST_SERVERS: (
-                cf_best_server_insert_query,
-                None,
-                CsvFiles.CF_BEST_SERVERS.value,
-                TableInitializer._clean_cf_servers,
-            ),
-            Tables.AS_STATISTICS: (caida_asn_insert_query, None, CsvFiles.ASNS.value, None),
-            Tables.COUNTRIES_WITH_STARLINK_MEASUREMENTS: (
-                countries_with_starlink_measurements_insert_query,
-                None,
-                CsvFiles.COUNTRIES_WITH_STARLINK_MEASUREMENTS.value,
-                None,
-            ),
-        }
 
     @LogUtils.log_function
     def initialize_tables(self) -> None:
         with self._conn.cursor() as cur:
-            for query in self._create_queries:
-                cur.execute(query)
-            for insert_record in self._insert_data.values():
-                self._process_and_insert_data(cur, insert_record)
+            for table, data in table_data.items():
+                if self._table_exists(cur, table):
+                    logger.info(f"Table {table.value} already exists. Skipping creation.")
+                    continue
+                cur.execute(data['create_query'])
+                logger.info(f"Created table {table.value}.")
+                if csv_name := data['csv_name']:
+                    self._process_and_insert_data(
+                        cur,
+                        data['insert_query'],
+                        data['post_insert_query'],
+                        csv_name,
+                        data['cleaning_fn'],
+                    )
             self._conn.commit()
             logger.info("All tables created and data inserted successfully.")
+
+    def _table_exists(self, cur: cursor, table_name: Tables) -> bool:
+        cur.execute(get_check_table_exists_query(table_name.value))
+        result = cur.fetchone()
+        return result is not None and result[0] is not None and bool(result[0])
 
     @LogUtils.log_function
     def update_asns(self) -> None:
@@ -119,10 +72,25 @@ class TableInitializer:
         delete_query = delete_all_from_table_query(table.value)
         cur.execute(delete_query)
         logger.info(f"Deleted all rows from {table.value} table.")
-        self._process_and_insert_data(cur, self._insert_data[table])
+        assert (
+            csv_name := table_data[table]["csv_name"]
+        ) is not None, f"CSV name for table {table.value} is not defined."
+        self._process_and_insert_data(
+            cur,
+            table_data[table]["insert_query"],
+            table_data[table]["post_insert_query"],
+            csv_name,
+            table_data[table]["cleaning_fn"],
+        )
 
-    def _process_and_insert_data(self, cur: cursor, insert_tuple: InsertTuple) -> None:
-        insert_query, post_insert_query, csv_file_name, clean_dataframe = insert_tuple
+    def _process_and_insert_data(
+        self,
+        cur: cursor,
+        insert_query: sql.SQL,
+        post_insert_query: Optional[sql.SQL],
+        csv_file_name: str,
+        clean_dataframe: Optional[CleanDataframeFn],
+    ) -> None:
         csv_file_path = data_dir / csv_file_name
         self._insert_data_from_csv(cur, csv_file_path, insert_query, clean_dataframe)
         if post_insert_query:
@@ -159,27 +127,3 @@ class TableInitializer:
             if df is not None:
                 del df
             gc.collect()
-
-    @staticmethod
-    def _clean_airport_codes(df: pd.DataFrame) -> None:
-        df.dropna(subset=["iata_code"], inplace=True)
-        for col in df.columns:
-            if col not in ["iso_country", "municipality", "iata_code"]:
-                df.drop(columns=col, inplace=True)
-        df.rename(
-            columns={"iso_country": "country_code", "municipality": "airport_city", "iata_code": "airport_code"},
-            inplace=True,
-        )
-
-    @staticmethod
-    def _clean_cf_servers(df: pd.DataFrame) -> None:
-        df.rename(
-            columns={
-                "clientCity": "client_city",
-                "clientCountry": "client_country",
-                "serverPoP": "server_airport_code",
-            },
-            inplace=True,
-        )
-        mask = df["client_country"].str.len().ne(2) | df["server_airport_code"].str.len().ne(3)
-        df.drop(index=df[mask].index, inplace=True)
