@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from .__init__ import logger
+from .config import logger
 from .enums import ExecutionDecision, UpdateChoices
 from .factory import Factory
 from .utils import parse_date, parse_date_range

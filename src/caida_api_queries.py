@@ -4,7 +4,7 @@ from typing import Any
 
 from graphqlclient import GraphQLClient
 
-from .__init__ import data_dir
+from .config import data_dir
 
 URL = "https://api.asrank.caida.org/v2/graphql"
 PAGE_SIZE = 10000

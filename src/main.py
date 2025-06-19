@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import psycopg2
 
-from .__init__ import logger
+from .config import logger
 from .enums import UpdateChoices
 from .factory import Factory
 from .handler import Handler

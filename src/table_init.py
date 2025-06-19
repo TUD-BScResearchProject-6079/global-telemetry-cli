@@ -7,8 +7,8 @@ from psycopg2 import sql
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import execute_values
 
-from .__init__ import data_dir, logger
 from .caida_api_queries import fetch_asn_data
+from .config import data_dir, logger
 from .enums import CsvFiles, Tables
 from .logger import LogUtils
 from .sql.delete_queries import delete_all_from_table_query

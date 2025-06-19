@@ -32,3 +32,8 @@ class UpdateChoices(Enum):
 class ExecutionDecision(Enum):
     OK = 0
     SKIP = 1
+
+
+class DataSource(Enum):
+    NDT7 = "NDT7"
+    CF = "Cloudflare AIM"

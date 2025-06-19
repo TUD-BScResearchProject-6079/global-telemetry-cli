@@ -11,7 +11,7 @@ file_handler_patch.start()
 
 @pytest.fixture(autouse=True)
 def patch_logger() -> Iterator[MagicMock]:
-    with patch("src.__init__.logger", MagicMock()) as mock_logger:
+    with patch("src.config.logger", MagicMock()) as mock_logger:
         yield mock_logger
 
 

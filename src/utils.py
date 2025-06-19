@@ -5,7 +5,7 @@ import zipfile
 import pandas as pd
 import requests
 
-from .__init__ import data_dir, logger
+from .config import data_dir, logger
 from .custom_exceptions import InvalidDateError, InvalidDateRangeError
 
 

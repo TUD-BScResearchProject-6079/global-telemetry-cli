@@ -208,6 +208,7 @@ unified_telemetry_create_query = sql.SQL(
         server_city character varying(255) COLLATE pg_catalog."default",
         server_country_code character(2) COLLATE pg_catalog."default" NOT NULL,
         asn integer NOT NULL,
+        data_source character varying(255) COLLATE pg_catalog."default" NOT NULL,
         packet_loss_rate numeric(10,5) NOT NULL,
         download_throughput_mbps numeric(10,5),
         download_latency_ms integer,

@@ -1,6 +1,6 @@
 from psycopg2.extensions import connection
 
-from .__init__ import logger
+from .config import logger
 from .enums import Tables
 from .logger import LogUtils
 from .sql.delete_queries import (

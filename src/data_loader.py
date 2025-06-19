@@ -6,7 +6,7 @@ from psycopg2 import sql
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import execute_values
 
-from .__init__ import logger
+from .config import logger
 from .custom_exceptions import InvalidDateError
 from .enums import CsvFiles, ExecutionDecision, Tables
 from .logger import LogUtils
