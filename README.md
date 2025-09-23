@@ -72,11 +72,23 @@ python -m src.main --date 2024-01-15
 ```
 Downloads and processes telemetry data for a specific date (YYYY-MM-DD format).
 
+### Process Daily Data (Starlink Only)
+```sh
+python -m src.main --date 2024-01-15 --starlink-only
+```
+Downloads and processes telemetry data for a specific date, including only Starlink measurements.
+
 ### Process Date Range
 ```sh
 python -m src.main --date-range 2024-01-01:2024-01-31
 ```
 Downloads and processes telemetry data for a date range (YYYY-MM-DD:YYYY-MM-DD format).
+
+### Process Date Range (Starlink Only)
+```sh
+python -m src.main --date-range 2024-01-01:2024-01-31 --starlink-only
+```
+Downloads and processes telemetry data for a date range, including only Starlink measurements.
 
 ### Update Best Servers
 ```sh
@@ -108,6 +120,7 @@ python -m src.main --drop
 | `--init` | Initialize database tables and populate with reference data |
 | `--date YYYY-MM-DD` | Process telemetry data for specific date |
 | `--date-range YYYY-MM-DD:YYYY-MM-DD` | Process telemetry data for date range |
+| `--starlink-only` | Filter measurements to include only Starlink data (use with --date or --date-range) |
 | `--update-best-servers DATE_RANGE` | Update best server mappings (end date optional) |
 | `--update-countries-with-starlink DATE_RANGE` | Update Starlink country data (end date optional) |
 | `--update CHOICES` | Update reference data (asn, airport, cities) |

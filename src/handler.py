@@ -46,21 +46,27 @@ class Handler:
             elif choice == UpdateChoices.CITIES:
                 table_initializer.update_cities()
 
-    def date(self, date_str: str, skip_inserted_dates: bool = False) -> None:
+    def date(self, date_str: str, skip_inserted_dates: bool = False, starlink_only: bool = False) -> None:
         date = parse_date(date_str)
         logger.info(f"Running with specified date: {date}")
         data_loader = self._factory.get_data_loader()
-        if data_loader.load_data(date, skip_inserted_dates=skip_inserted_dates) == ExecutionDecision.OK:
+        if (
+            data_loader.load_data(date, skip_inserted_dates=skip_inserted_dates, starlink_only=starlink_only)
+            == ExecutionDecision.OK
+        ):
             data_processer = self._factory.get_data_processer()
             data_processer.process_data()
 
-    def date_range(self, date_range_str: str) -> None:
+    def date_range(self, date_range_str: str, starlink_only: bool = False) -> None:
         start_date, end_date = parse_date_range(date_range_str)
         logger.info(f"Running with specified date range: {start_date} to {end_date}")
         date = end_date
         while date >= start_date:
             data_loader = self._factory.get_data_loader()
-            if data_loader.load_data(date, skip_inserted_dates=True) == ExecutionDecision.OK:
+            if (
+                data_loader.load_data(date, skip_inserted_dates=True, starlink_only=starlink_only)
+                == ExecutionDecision.OK
+            ):
                 data_processer = self._factory.get_data_processer()
                 data_processer.process_data()
             date -= timedelta(days=1)

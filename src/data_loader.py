@@ -39,16 +39,18 @@ class DataLoader:
         self._client = bigquery.Client(project="measurement-lab")
 
     @LogUtils.log_function
-    def load_data(self, date: date, skip_inserted_dates: bool = False) -> ExecutionDecision:
+    def load_data(
+        self, date: date, skip_inserted_dates: bool = False, starlink_only: bool = False
+    ) -> ExecutionDecision:
         with self._conn.cursor() as cur:
             if (
                 result := self._check_date(cur, date, skip_inserted_dates=skip_inserted_dates)
             ) == ExecutionDecision.SKIP:
                 logger.info(f"Skipping data loading for {date.strftime('%Y-%m-%d')} as it has already been processed.")
                 return result
-            top_asns = self._get_top_asns(cur)
-            ndt7_query = get_ndt_formatted_query(date.strftime("%Y-%m-%d"), top_asns)
-            cf_query = get_cf_formatted_query(date.strftime("%Y-%m-%d"), top_asns)
+            asns = "14593" if starlink_only else self._get_top_asns(cur)
+            ndt7_query = get_ndt_formatted_query(date.strftime("%Y-%m-%d"), asns)
+            cf_query = get_cf_formatted_query(date.strftime("%Y-%m-%d"), asns)
             self._download_data(cur, ndt7_query, ndt_temp_insert_query, 'NDT7')
             self._download_data(cur, cf_query, cf_temp_insert_query, 'Cloudflare')
             self._insert_processed_date(cur, date)

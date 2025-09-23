@@ -61,6 +61,13 @@ def parse_args() -> argparse.Namespace:
         help="Collect network measurements for a specific date range (format: yyyy-mm-dd:yyyy-mm-dd). The first date is the start (left of :) and the second date is the end (right of :). The end date is required.",
     )
 
+    parser.add_argument(
+        "-so",
+        "--starlink-only",
+        action="store_true",
+        help="When collecting network measurements, only include measurements from Starlink (i.e., for date and date-range commands).",
+    )
+
     return parser.parse_args()
 
 
@@ -79,6 +86,7 @@ def main() -> None:
         ) as conn:
             logger.info("Connected to the database successfully.")
             handler = Handler(Factory(conn))
+            starlink_only: bool = args.starlink_only
             if args.drop:
                 handler.drop()
             if args.init:
@@ -90,9 +98,9 @@ def main() -> None:
             if args.update:
                 handler.update(args.update)
             if args.date:
-                handler.date(args.date)
+                handler.date(args.date, starlink_only=starlink_only)
             if args.date_range:
-                handler.date_range(args.date_range)
+                handler.date_range(args.date_range, starlink_only=starlink_only)
     except psycopg2.OperationalError as e:
         logger.error(f"OperationalError: Failed to connect to the database - {e}")
     except psycopg2.InterfaceError as e:
