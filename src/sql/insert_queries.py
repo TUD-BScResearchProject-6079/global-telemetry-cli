@@ -56,6 +56,7 @@ cf_temp_insert_query = sql.SQL(
         upload_latency_ms,
         upload_jitter_ms
     ) VALUES %s
+    ON CONFLICT DO NOTHING;
 """
 )
 
@@ -70,6 +71,7 @@ unified_telemetry_insert_query = sql.SQL(
         server_city,
         server_country_code,
         asn,
+        data_source,
         packet_loss_rate,
         download_throughput_mbps,
         download_latency_ms,
@@ -78,6 +80,7 @@ unified_telemetry_insert_query = sql.SQL(
         upload_latency_ms,
         upload_jitter_ms
     ) VALUES %s
+    ON CONFLICT DO NOTHING;
 """
 )
 
@@ -118,7 +121,8 @@ global_telemetry_from_cf_insert_query = sql.SQL(
     f"""
     INSERT INTO unified_telemetry (uuid, test_time, client_city, client_region, client_country_code, server_city, server_country_code, asn, data_source, packet_loss_rate, download_throughput_mbps, download_latency_ms, download_jitter_ms, upload_throughput_mbps, upload_latency_ms, upload_jitter_ms)
     SELECT uuid, test_time, client_city, client_region, client_country_code, ac.airport_city AS server_city, ac.country_code AS server_country_code, asn, '{DataSource.CF.value}' AS data_source, packet_loss_rate, download_throughput_mbps, download_latency_ms, download_jitter_ms, upload_throughput_mbps, upload_latency_ms, upload_jitter_ms
-    FROM cf_temp JOIN airport_country ac ON cf_temp.server_airport_code = ac.airport_code;
+    FROM cf_temp JOIN airport_country ac ON cf_temp.server_airport_code = ac.airport_code
+    ON CONFLICT DO NOTHING;
 """
 )
 
@@ -126,6 +130,7 @@ global_telemetry_from_ndt_insert_query = sql.SQL(
     f"""
     INSERT INTO unified_telemetry (uuid, test_time, client_city, client_region, client_country_code, server_city, server_country_code, asn, data_source, packet_loss_rate, download_throughput_mbps, download_latency_ms, download_jitter_ms, upload_throughput_mbps, upload_latency_ms, upload_jitter_ms)
     SELECT uuid, test_time, client_city, client_region, client_country_code, server_city, server_country_code, asn, '{DataSource.NDT7.value}' AS data_source, packet_loss_rate, download_throughput_mbps, download_latency_ms, download_jitter_ms, upload_throughput_mbps, upload_latency_ms, upload_jitter_ms
-    FROM ndt7_temp;
+    FROM ndt7_temp
+    ON CONFLICT DO NOTHING;
 """
 )
