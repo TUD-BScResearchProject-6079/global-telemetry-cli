@@ -3,7 +3,7 @@ from datetime import timedelta
 from .config import logger
 from .enums import ExecutionDecision, UpdateChoices
 from .factory import Factory
-from .utils import parse_date, parse_date_range
+from .utils import parse_date, parse_date_range, parse_date_range_from_months
 
 
 class Handler:
@@ -25,9 +25,12 @@ class Handler:
         table_initializer.initialize_tables()
 
     def update_best_servers(self, date_range_str: str) -> None:
-        start_date, end_date = parse_date_range(date_range_str)
+        start_date, end_date = parse_date_range_from_months(date_range_str)
         data_loader = self._factory.get_data_loader()
-        data_loader.update_best_servers(start_date, end_date)
+        while start_date <= end_date:
+            end_of_month = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            data_loader.update_best_servers(start_date, end_of_month)
+            start_date = (start_date + timedelta(days=32)).replace(day=1)
 
     def update_countries_with_starlink(self, date_range_str: str) -> None:
         start_date, end_date = parse_date_range(date_range_str)

@@ -34,7 +34,7 @@ ndt_temp_insert_query = sql.SQL(
                 upload_throughput_mbps,
                 upload_latency_ms,
                 upload_jitter_ms
-            ) VALUES %s
+            ) VALUES %s ON CONFLICT DO NOTHING;
         """
 )
 
@@ -91,16 +91,30 @@ airport_insert_query = sql.SQL(
 """
 )
 
-ndt_best_server_insert_query = sql.SQL(
+ndt_best_terrestrial_servers_insert_query = sql.SQL(
     """
-    INSERT INTO ndt_server_for_city (client_city, client_country_code, server_city, server_country_code)
+    INSERT INTO ndt7_terrestrial_servers (client_city, client_country_code, server_city, server_country_code, month, year)
     VALUES %s
 """
 )
 
-cf_best_server_insert_query = sql.SQL(
+ndt_best_starlink_servers_insert_query = sql.SQL(
     """
-    INSERT INTO cf_server_for_city (client_city, client_country_code, server_airport_code)
+    INSERT INTO ndt7_starlink_servers (client_city, client_country_code, server_city, server_country_code, month, year)
+    VALUES %s
+"""
+)
+
+cf_best_terrestrial_servers_insert_query = sql.SQL(
+    """
+    INSERT INTO cf_terrestrial_servers (client_city, client_country_code, server_airport_code, month, year)
+    VALUES %s
+"""
+)
+
+cf_best_starlink_servers_insert_query = sql.SQL(
+    """
+    INSERT INTO cf_starlink_servers (client_city, client_country_code, server_airport_code, month, year)
     VALUES %s
 """
 )

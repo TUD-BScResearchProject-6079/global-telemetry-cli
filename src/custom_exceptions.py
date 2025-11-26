@@ -13,6 +13,9 @@ class InvalidDateError(ValueError):
 class InvalidDateRangeError(ValueError):
     """Raised when the date range is invalid."""
 
-    def __init__(self, start_date: date, end_date: date) -> None:
-        message = f"Invalid date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}. Start date must be before end date."
+    def __init__(self, start_date: date, end_date: date, month_only: bool = False) -> None:
+        if month_only:
+            message = f"Invalid date range: {start_date.strftime('%Y-%m')} to {end_date.strftime('%Y-%m')}. Start date must be before end date."
+        else:
+            message = f"Invalid date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}. Start date must be before end date."
         super().__init__(message)

@@ -1,86 +1,123 @@
 from psycopg2 import sql
 
-ndt_temp_delete_invalid_servers_query = sql.SQL(
-    """
-    DELETE FROM ndt7_temp n
-    WHERE (
-        EXISTS (
-            SELECT 1
-            FROM ndt_server_for_city sv
-            WHERE sv.client_city = n.client_city
-            AND sv.client_country_code = n.client_country_code
-        )
-        AND NOT EXISTS (
-            SELECT 1
-            FROM ndt_server_for_city sv
-            WHERE sv.client_city = n.client_city
-            AND sv.client_country_code = n.client_country_code
-            AND sv.server_city = n.server_city
-            AND sv.server_country_code = n.server_country_code
-        )
-    )
-    OR (
-        NOT EXISTS (
-            SELECT 1
-            FROM ndt_server_for_city sv
-            WHERE sv.client_city = n.client_city
-            AND sv.client_country_code = n.client_country_code
-        )
-        AND EXISTS (
-            SELECT 1
-            FROM ndt_server_for_city sv
-            WHERE sv.client_country_code = n.client_country_code
-        )
-        AND NOT EXISTS (
-            SELECT 1
-            FROM ndt_server_for_city sv
-            WHERE sv.client_country_code = n.client_country_code
-            AND sv.server_city = n.server_city
-            AND sv.server_country_code = n.server_country_code
-        )
-    )
-"""
-)
 
-cf_temp_delete_invalid_servers_query = sql.SQL(
-    """
-    DELETE FROM cf_temp c
-    WHERE (
-        EXISTS (
-            SELECT 1
-            FROM cf_server_for_city sv
-            WHERE sv.client_city = c.client_city
-            AND sv.client_country_code = c.client_country_code
-        )
-        AND NOT EXISTS (
-            SELECT 1
-            FROM cf_server_for_city sv
-            WHERE sv.client_city = c.client_city
-            AND sv.client_country_code = c.client_country_code
-            AND sv.server_airport_code = c.server_airport_code
-        )
-    )
-    OR (
-        NOT EXISTS (
-            SELECT 1
-            FROM cf_server_for_city sv
-            WHERE sv.client_city = c.client_city
-            AND sv.client_country_code = c.client_country_code
-        )
-        AND EXISTS (
-            SELECT 1
-            FROM cf_server_for_city sv
-            WHERE sv.client_country_code = c.client_country_code
-        )
-        AND NOT EXISTS (
-            SELECT 1
-            FROM cf_server_for_city sv
-            WHERE sv.client_country_code = c.client_country_code
-            AND sv.server_airport_code = c.server_airport_code
-        )
-    )
+def get_ndt7_temp_delete_invalid_servers_query(table: str) -> str:
+    return f"""
+    DELETE FROM ndt7_temp n
+    WHERE
+        n.asn {"=" if 'starlink' in table else "!="} 14593
+        AND (
+                (
+                    EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_city = n.client_city
+                        AND sv.client_country_code = n.client_country_code
+                        AND sv.month = EXTRACT(MONTH FROM n.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM n.test_time AT TIME ZONE 'UTC')
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_city = n.client_city
+                        AND sv.client_country_code = n.client_country_code
+                        AND sv.server_city = n.server_city
+                        AND sv.server_country_code = n.server_country_code
+                        AND sv.month = EXTRACT(MONTH FROM n.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM n.test_time AT TIME ZONE 'UTC')
+                    )
+                )
+                OR
+                (
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_city = n.client_city
+                        AND sv.client_country_code = n.client_country_code
+                        AND sv.month = EXTRACT(MONTH FROM n.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM n.test_time AT TIME ZONE 'UTC')
+                    )
+                    AND EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_country_code = n.client_country_code
+                        AND sv.month = EXTRACT(MONTH FROM n.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM n.test_time AT TIME ZONE 'UTC')
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_country_code = n.client_country_code
+                        AND sv.server_city = n.server_city
+                        AND sv.server_country_code = n.server_country_code
+                        AND sv.month = EXTRACT(MONTH FROM n.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM n.test_time AT TIME ZONE 'UTC')
+                    )
+                )
+            )
 """
-)
+
+
+def get_cf_temp_delete_invalid_servers_query(table: str) -> str:
+    return f"""
+        DELETE FROM cf_temp c
+        WHERE
+            c.asn {"=" if 'starlink' in table else "!="} 14593
+            AND
+            (
+                (
+                    EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_city = c.client_city
+                        AND sv.client_country_code = c.client_country_code
+                        AND sv.month = EXTRACT(MONTH FROM c.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM c.test_time AT TIME ZONE 'UTC')
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_city = c.client_city
+                        AND sv.client_country_code = c.client_country_code
+                        AND sv.server_airport_code = c.server_airport_code
+                        AND sv.month = EXTRACT(MONTH FROM c.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM c.test_time AT TIME ZONE 'UTC')
+                    )
+                )
+                OR
+                (
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_city = c.client_city
+                        AND sv.client_country_code = c.client_country_code
+                        AND sv.month = EXTRACT(MONTH FROM c.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM c.test_time AT TIME ZONE 'UTC')
+                    )
+                    AND EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_country_code = c.client_country_code
+                        AND sv.month = EXTRACT(MONTH FROM c.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM c.test_time AT TIME ZONE 'UTC')
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM {table} sv
+                        WHERE sv.client_country_code = c.client_country_code
+                        AND sv.server_airport_code = c.server_airport_code
+                        AND sv.month = EXTRACT(MONTH FROM c.test_time AT TIME ZONE 'UTC')
+                        AND sv.year = EXTRACT(YEAR FROM c.test_time AT TIME ZONE 'UTC')
+                    )
+                )
+            )
+"""
+
+
+def delete_all_from_table_query(table_name: str) -> sql.SQL:
+    query = f"DELETE FROM {table_name};"
+    return sql.SQL(query)
+
 
 airport_codes_standardize_cities_query = sql.SQL(
     """
@@ -97,6 +134,4 @@ airport_codes_standardize_cities_query = sql.SQL(
 )
 
 
-def delete_all_from_table_query(table_name: str) -> sql.SQL:
-    query = f"DELETE FROM {table_name};"
-    return sql.SQL(query)
+print(get_ndt7_temp_delete_invalid_servers_query("ndt7_starlink_servers"))

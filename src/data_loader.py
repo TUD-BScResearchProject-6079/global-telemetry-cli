@@ -18,19 +18,14 @@ from .sql.bigquery_queries import (
     get_ndt_formatted_query,
 )
 from .sql.delete_queries import delete_all_from_table_query
-from .sql.insert_queries import (
-    cf_best_server_insert_query,
-    cf_temp_insert_query,
-    countries_with_starlink_measurements_insert_query,
-    ndt_best_server_insert_query,
-    ndt_temp_insert_query,
-    processed_dates_insert_query,
-)
 from .sql.select_queries import (
+    get_top_asns_query,
     processed_date_select_query,
-    top_five_isps_countries_with_starlink_select_query,
 )
+from .table_data import table_data
 from .utils import save_dataframe_to_csv
+
+STARLINK_ASN = "14593"
 
 
 class DataLoader:
@@ -48,34 +43,70 @@ class DataLoader:
             ) == ExecutionDecision.SKIP:
                 logger.info(f"Skipping data loading for {date.strftime('%Y-%m-%d')} as it has already been processed.")
                 return result
-            asns = "14593" if starlink_only else self._get_top_asns(cur)
+            asns = "14593" if starlink_only else self._get_top_asns(cur, includes_starlink=True)
             ndt7_query = get_ndt_formatted_query(date.strftime("%Y-%m-%d"), asns)
             cf_query = get_cf_formatted_query(date.strftime("%Y-%m-%d"), asns)
-            self._download_data(cur, ndt7_query, ndt_temp_insert_query, 'NDT7')
-            self._download_data(cur, cf_query, cf_temp_insert_query, 'Cloudflare')
+            self._download_data(cur, ndt7_query, table_data[Tables.NDT7_TEMP]["insert_query"], 'NDT7')
+            self._download_data(cur, cf_query, table_data[Tables.CF_TEMP]["insert_query"], 'Cloudflare')
             self._insert_processed_date(cur, date)
             self._conn.commit()
         return ExecutionDecision.OK
 
     @LogUtils.log_function
     def update_best_servers(self, date_from: date, date_to: date) -> None:
+        """
+        Update best servers for the given date range.
+
+        @param date_from: is the first day of a month
+        @param date_to: is the last day of the month.
+        """
         with self._conn.cursor() as cur:
-            top_asns = self._get_top_asns(cur)
-            ndt_query = get_ndt_best_servers_query(
+            top_asns = self._get_top_asns(cur, includes_starlink=False)
+
+            ndt_terrestrial_query = get_ndt_best_servers_query(
                 date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns
             )
-            cf_query = get_cf_best_servers_query(date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns)
-            delete_ndt_query = delete_all_from_table_query(Tables.NDT_BEST_SERVERS.value)
-            cur.execute(delete_ndt_query)
-            logger.info("Deleted all rows from NDT7 Best Servers table.")
-            ndt_df = self._download_data(cur, ndt_query, ndt_best_server_insert_query, 'NDT7 Best Servers')
-            save_dataframe_to_csv(ndt_df, CsvFiles.NDT_BEST_SERVERS.value)
+            ndt_terrestrial_df = self._download_data(
+                cur,
+                ndt_terrestrial_query,
+                table_data[Tables.NDT_BEST_TERRESTRIAL_SERVERS]["insert_query"],
+                'NDT7 Best Terrestrial Servers',
+            )
+            save_dataframe_to_csv(ndt_terrestrial_df, CsvFiles.NDT_BEST_TERRESTRIAL_SERVERS.value, append=True)
 
-            delete_cf_query = delete_all_from_table_query(Tables.CF_BEST_SERVERS.value)
-            cur.execute(delete_cf_query)
-            logger.info("Deleted all rows from Cloudflare Best Servers table.")
-            cf_df = self._download_data(cur, cf_query, cf_best_server_insert_query, 'Cloudflare Best Servers')
-            save_dataframe_to_csv(cf_df, CsvFiles.CF_BEST_SERVERS.value)
+            ndt_starlink_query = get_ndt_best_servers_query(
+                date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), STARLINK_ASN
+            )
+            ndt_starlink_df = self._download_data(
+                cur,
+                ndt_starlink_query,
+                table_data[Tables.NDT_BEST_STARLINK_SERVERS]["insert_query"],
+                'NDT7 Best Starlink Servers',
+            )
+            save_dataframe_to_csv(ndt_starlink_df, CsvFiles.NDT_BEST_STARLINK_SERVERS.value, append=True)
+
+            cf_terrestrial_query = get_cf_best_servers_query(
+                date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), top_asns
+            )
+            cf_terrestrial_df = self._download_data(
+                cur,
+                cf_terrestrial_query,
+                table_data[Tables.CF_BEST_TERRESTRIAL_SERVERS]["insert_query"],
+                'Cloudflare Best Terrestrial Servers',
+            )
+            save_dataframe_to_csv(cf_terrestrial_df, CsvFiles.CF_BEST_TERRESTRIAL_SERVERS.value, append=True)
+
+            cf_starlink_query = get_cf_best_servers_query(
+                date_from.strftime("%Y-%m-%d"), date_to.strftime("%Y-%m-%d"), STARLINK_ASN
+            )
+            cf_starlink_df = self._download_data(
+                cur,
+                cf_starlink_query,
+                table_data[Tables.CF_BEST_STARLINK_SERVERS]["insert_query"],
+                'Cloudflare Best Starlink Servers',
+            )
+            save_dataframe_to_csv(cf_starlink_df, CsvFiles.CF_BEST_STARLINK_SERVERS.value, append=True)
+
             self._conn.commit()
 
     @LogUtils.log_function
@@ -90,7 +121,7 @@ class DataLoader:
             df = self._download_data(
                 cur,
                 download_query,
-                countries_with_starlink_measurements_insert_query,
+                table_data[Tables.COUNTRIES_WITH_STARLINK_MEASUREMENTS]["insert_query"],
                 'Countries with Starlink Measurements',
             )
             save_dataframe_to_csv(df, CsvFiles.COUNTRIES_WITH_STARLINK_MEASUREMENTS.value)
@@ -110,7 +141,7 @@ class DataLoader:
 
     def _insert_processed_date(self, cur: cursor, date_to_process: date) -> None:
         data_tuples = [(date_to_process.strftime("%Y-%m-%d"),)]
-        execute_values(cur, processed_dates_insert_query, data_tuples)
+        execute_values(cur, table_data[Tables.PROCESSED_DATES]["insert_query"], data_tuples)
         logger.info(f"Inserted processed date: {date_to_process.strftime('%Y-%m-%d')} into the database.")
 
     def _download_data(
@@ -129,8 +160,9 @@ class DataLoader:
         logger.info(f"Inserted {len(data_tuples)} rows into the database from {dataset_name}.")
         return df
 
-    def _get_top_asns(self, cur: cursor) -> str:
-        cur.execute(top_five_isps_countries_with_starlink_select_query)
+    def _get_top_asns(self, cur: cursor, includes_starlink: bool) -> str:
+        query = get_top_asns_query(includes_starlink=includes_starlink)
+        cur.execute(query)
         row = cur.fetchone()
         if not row:
             logger.warning("No ISPs found in the database. Using default ISPs.")

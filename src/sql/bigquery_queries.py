@@ -2,7 +2,7 @@ def get_cf_formatted_query(date: str, top_asns: str) -> str:
     return f"""
     SELECT
         measurementUUID AS uuid,
-        DATETIME(TIMESTAMP(measurementTime), "UTC") AS test_time,
+        FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%E6S+00', TIMESTAMP(measurementTime), 'UTC') AS test_time,
         clientCity AS client_city,
         clientRegion AS client_region,
         clientCountry AS client_country_code,
@@ -28,7 +28,7 @@ def get_ndt_formatted_query(date: str, top_asns: str) -> str:
     return f"""
     SELECT
       a.UUID as uuid,
-      DATETIME(TIMESTAMP(a.TestTime), "UTC") AS test_time,
+      FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%E6S+00', TIMESTAMP(a.TestTime), 'UTC') AS test_time,
       client.Geo.City AS client_city,
       client.Geo.Region AS client_region,
       client.Geo.CountryCode AS client_country_code,
@@ -63,7 +63,10 @@ def get_ndt_formatted_query(date: str, top_asns: str) -> str:
       AND client.Network.ASNumber IN ({top_asns});"""
 
 
-def get_cf_best_servers_query(date_from: str, date_to: str, top_asns: str) -> str:
+def get_cf_best_servers_query(date_from: str, date_to: str, asns: str) -> str:
+    month = date_from.split('-')[1]
+    year = date_from.split('-')[0]
+
     return f"""
     WITH city_servers AS (
       SELECT
@@ -82,34 +85,42 @@ def get_cf_best_servers_query(date_from: str, date_to: str, top_asns: str) -> st
         AND clientCountry <> ''
         AND serverPoP IS NOT NULL
         AND serverPoP <> ''
-        AND clientASN IN  ({top_asns})
+        AND clientASN IN  ({asns})
+    ),
+
+    city_percentiles AS (
+      SELECT DISTINCT
+        clientCity,
+        clientCountry,
+        PERCENTILE_CONT(download_latency_ms, 0.01) OVER (PARTITION BY clientCity, clientCountry) AS download_latency_p1,
+        PERCENTILE_CONT(upload_latency_ms, 0.01) OVER (PARTITION BY clientCity, clientCountry) AS upload_latency_p1
+      FROM city_servers
     )
 
     SELECT DISTINCT
-      clientCity,
-      clientCountry,
-      serverPoP
+      cs.clientCity,
+      cs.clientCountry,
+      cs.serverPoP,
+      {month} as month,
+      {year} as year
     FROM city_servers cs
+    JOIN city_percentiles cp
+      ON cs.clientCity = cp.clientCity AND cs.clientCountry = cp.clientCountry
     WHERE
-      download_latency_ms IS NOT NULL
-      AND download_latency_ms > 0
-      AND download_latency_ms = (
-        SELECT MIN(download_latency_ms)
-        FROM city_servers
-        WHERE cs.clientCountry = clientCountry AND cs.clientCity = clientCity
-      )
+      (cs.download_latency_ms IS NOT NULL
+        AND cs.download_latency_ms > 0
+        AND cs.download_latency_ms <= cp.download_latency_p1)
       OR
-      upload_latency_ms IS NOT NULL
-      AND upload_latency_ms > 0
-      AND upload_latency_ms = (
-        SELECT MIN(upload_latency_ms)
-        FROM city_servers
-        WHERE cs.clientCountry = clientCountry AND cs.clientCity = clientCity
-      )
+      (cs.upload_latency_ms IS NOT NULL
+        AND cs.upload_latency_ms > 0
+        AND cs.upload_latency_ms <= cp.upload_latency_p1)
     """
 
 
-def get_ndt_best_servers_query(date_from: str, date_to: str, top_asns: str) -> str:
+def get_ndt_best_servers_query(date_from: str, date_to: str, asns: str) -> str:
+    month = date_from.split('-')[1]
+    year = date_from.split('-')[0]
+
     return f"""
     WITH server_for_client AS (
       SELECT
@@ -127,32 +138,33 @@ def get_ndt_best_servers_query(date_from: str, date_to: str, top_asns: str) -> s
         AND client.Geo.City IS NOT NULL
         AND client.Geo.City <> ''
         AND a.MeanThroughputMbps <> 0.0
-        AND client.Network.ASNumber IN ({top_asns})
+        AND client.Network.ASNumber IN ({asns})
     ),
 
-    min_latencies AS (
-      SELECT
+    latency_thresholds AS (
+      SELECT DISTINCT
         client_city,
         client_country,
-        MIN(download_latency_ms) AS min_download_latency_ms,
-        MIN(upload_latency_ms) AS min_upload_latency_ms
+        PERCENTILE_CONT(download_latency_ms, 0.01) OVER (PARTITION BY client_city, client_country) AS download_latency_threshold_ms,
+        PERCENTILE_CONT(upload_latency_ms, 0.01) OVER (PARTITION BY client_city, client_country) AS upload_latency_threshold_ms
       FROM server_for_client
       WHERE download_latency_ms IS NOT NULL OR upload_latency_ms IS NOT NULL
-      GROUP BY client_city, client_country
     )
 
     SELECT DISTINCT
       s.client_city,
       s.client_country,
       s.server_city,
-      s.server_country
+      s.server_country,
+      {month} as month,
+      {year} as year
     FROM server_for_client s
-    JOIN min_latencies m
-      ON s.client_city = m.client_city AND s.client_country = m.client_country
+    JOIN latency_thresholds lt
+      ON s.client_city = lt.client_city AND s.client_country = lt.client_country
     WHERE
-      (s.download_latency_ms IS NOT NULL AND s.download_latency_ms = m.min_download_latency_ms)
+      (s.download_latency_ms IS NOT NULL AND s.download_latency_ms <= lt.download_latency_threshold_ms)
       OR
-      (s.upload_latency_ms IS NOT NULL AND s.upload_latency_ms = m.min_upload_latency_ms)
+      (s.upload_latency_ms IS NOT NULL AND s.upload_latency_ms <= lt.upload_latency_threshold_ms)
     """
 
 

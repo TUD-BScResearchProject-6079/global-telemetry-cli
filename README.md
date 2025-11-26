@@ -6,7 +6,7 @@ This project implements a comprehensive data processing system that merges NDT7 
 
 - **Data Loading**: Downloads and processes telemetry data from BigQuery (NDT7 and Cloudflare datasets)
 - **Data Processing**: Standardizes city names, validates servers, and merges datasets
-- **Best Server Analysis**: Identifies optimal servers for each client location based on latency
+- **Best Server Analysis**: Identifies optimal servers for each client location based on median latency, calculated separately for terrestrial and Starlink networks on a per-month basis
 - **Starlink Analysis**: Tracks countries with Starlink measurements
 - **Automated Updates**: Updates ASN data, airport codes, and city information
 - **Comprehensive Logging**: Detailed logging with UTC timestamps
@@ -92,9 +92,15 @@ Downloads and processes telemetry data for a date range, including only Starlink
 
 ### Update Best Servers
 ```sh
-python -m src.main --update-best-servers 2024-01-01:2024-01-31
+python -m src.main --update-best-servers 2024-01:2024-12
 ```
-Updates best server mappings for a date range. End date is optional - if not provided, defaults to yesterday.
+Updates best server mappings for the specified month range (YYYY-MM:YYYY-MM format). The system calculates optimal servers separately for:
+- **NDT7 terrestrial servers** (non-Starlink ISPs)
+- **NDT7 Starlink servers** (ASN 14593)
+- **Cloudflare terrestrial servers** (non-Starlink ISPs)
+- **Cloudflare Starlink servers** (ASN 14593)
+
+Best servers are determined per month based on median latency for each client location. Results are stored in separate tables and exported to CSV files. End date is optional - if not provided, defaults to the start date (single month).
 
 ### Update Countries with Starlink
 ```sh
@@ -121,7 +127,7 @@ python -m src.main --drop
 | `--date YYYY-MM-DD` | Process telemetry data for specific date |
 | `--date-range YYYY-MM-DD:YYYY-MM-DD` | Process telemetry data for date range |
 | `--starlink-only` | Filter measurements to include only Starlink data (use with --date or --date-range) |
-| `--update-best-servers DATE_RANGE` | Update best server mappings (end date optional) |
+| `--update-best-servers YYYY-MM:YYYY-MM` | Update best server mappings per month for terrestrial and Starlink separately (end date optional) |
 | `--update-countries-with-starlink DATE_RANGE` | Update Starlink country data (end date optional) |
 | `--update CHOICES` | Update reference data (asn, airport, cities) |
 | `--drop` | Drop all database tables |
@@ -158,7 +164,11 @@ global-telemetry-data-processing/
 │       ├── delete_queries.py
 │       └── ...
 ├── data/
-│   ├── cities.csv                 # City reference data
+│   ├── cities.csv                           # City reference data
+│   ├── ndt-best-terrestrial-servers.csv    # NDT7 best servers for terrestrial ISPs
+│   ├── ndt-best-starlink-servers.csv       # NDT7 best servers for Starlink
+│   ├── cf-best-terrestrial-servers.csv     # Cloudflare best servers for terrestrial ISPs
+│   ├── cf-best-starlink-servers.csv        # Cloudflare best servers for Starlink
 │   └── ...
 ├── test/
 │   └── ...
@@ -195,8 +205,10 @@ The project includes automated code quality checks:
 ### Database Schema
 The system creates and manages the following main tables:
 - `unified_telemetry`: Merged NDT7 and Cloudflare data
-- `ndt_server_for_city`: Best NDT7 servers for each city
-- `cf_server_for_city`: Best Cloudflare servers for each city
+- `ndt7_terrestrial_servers`: Best NDT7 servers for terrestrial ISPs per client location per month
+- `ndt7_starlink_servers`: Best NDT7 servers for Starlink per client location per month
+- `cf_terrestrial_servers`: Best Cloudflare servers for terrestrial ISPs per client location per month
+- `cf_starlink_servers`: Best Cloudflare servers for Starlink per client location per month
 - `countries_with_starlink_measurements`: Countries with Starlink data
 - `as_statistics`: ASN information
 - `cities`: City name standardization data

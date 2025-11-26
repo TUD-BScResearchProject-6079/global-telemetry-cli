@@ -30,7 +30,7 @@ def parse_args() -> argparse.Namespace:
         "-ubs",
         "--update-best-servers",
         type=str,
-        help="Update best server for a specific date range. Use format yyyy-mm-dd or yyyy-mm-dd:yyyy-mm-dd, where the first date is the start (left of :) and the second date is the end (right of :). The end date is optional.",
+        help="Update best servers for a specific date range. Best servers will be calculated and updated for every month in the range. Use format yyyy-mm or yyyy-mm:yyyy-mm, where the first date is the start (left of :) and the second date is the end (right of :). The end date is optional.",
     )
 
     parser.add_argument(

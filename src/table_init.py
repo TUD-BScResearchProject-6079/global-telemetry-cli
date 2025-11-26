@@ -9,7 +9,7 @@ from psycopg2.extras import execute_values
 
 from .caida_api_queries import fetch_asn_data
 from .config import data_dir, logger
-from .enums import CsvFiles, Tables
+from .enums import CsvFiles, ExecutionDecision, Tables
 from .logger import LogUtils
 from .sql.delete_queries import delete_all_from_table_query
 from .sql.drop_queries import drop_tables_query
@@ -91,8 +91,8 @@ class TableInitializer:
         clean_dataframe: Optional[CleanDataframeFn],
     ) -> None:
         csv_file_path = data_dir / csv_file_name
-        self._insert_data_from_csv(cur, csv_file_path, insert_query, clean_dataframe)
-        if post_insert_query:
+        insert_result = self._insert_data_from_csv(cur, csv_file_path, insert_query, clean_dataframe)
+        if insert_result == ExecutionDecision.OK and post_insert_query:
             cur.execute(post_insert_query)
             logger.info(f"Executed post-insert query for {csv_file_name}")
 
@@ -108,9 +108,12 @@ class TableInitializer:
         csv_file_path: Path,
         insert_query: sql.SQL,
         clean_dataframe: Callable[[pd.DataFrame], None] | None = None,
-    ) -> None:
+    ) -> ExecutionDecision:
         df = None
         try:
+            if not csv_file_path.exists():
+                logger.warning(f"CSV file {csv_file_path} does not exist. Skipping data insertion.")
+                return ExecutionDecision.SKIP
             df = pd.read_csv(csv_file_path, dtype=str, na_values=[""], keep_default_na=False)
             df = df.where(pd.notnull(df), None)
             if clean_dataframe:
@@ -118,6 +121,7 @@ class TableInitializer:
             data_tuples = [tuple(x) for x in df.to_records(index=False)]
             execute_values(cur, insert_query, data_tuples)
             logger.info(f"Inserted {len(data_tuples)} rows into the database from {csv_file_path}.")
+            return ExecutionDecision.OK
 
         except Exception as e:
             logger.error(f"Exception inserting data from {csv_file_path}: {e}")

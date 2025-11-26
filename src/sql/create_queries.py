@@ -67,31 +67,59 @@ airports_create_query = sql.SQL(
 """
 )
 
-
-ndt_best_servers_create_query = sql.SQL(
+ndt_best_terrestrial_servers_create_query = sql.SQL(
     """
-    CREATE TABLE IF NOT EXISTS ndt_server_for_city (
+    CREATE TABLE IF NOT EXISTS ndt7_terrestrial_servers (
         client_city VARCHAR(255) NOT NULL,
         client_country_code CHAR(2) NOT NULL,
         server_city VARCHAR(255) NOT NULL,
         server_country_code CHAR(2) NOT NULL,
-        CONSTRAINT ndt_server_for_city_pkey PRIMARY KEY (client_city, client_country_code, server_city, server_country_code)
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        CONSTRAINT ndt7_terrestrial_servers_pkey PRIMARY KEY (client_city, client_country_code, server_city, server_country_code, month, year)
     );
 """
 )
 
-
-cf_best_servers_create_query = sql.SQL(
+ndt_best_starlink_servers_create_query = sql.SQL(
     """
-    CREATE TABLE IF NOT EXISTS cf_server_for_city (
+    CREATE TABLE IF NOT EXISTS ndt7_starlink_servers (
+        client_city VARCHAR(255) NOT NULL,
+        client_country_code CHAR(2) NOT NULL,
+        server_city VARCHAR(255) NOT NULL,
+        server_country_code CHAR(2) NOT NULL,
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        CONSTRAINT ndt7_starlink_servers_pkey PRIMARY KEY (client_city, client_country_code, server_city, server_country_code, month, year)
+    );
+"""
+)
+
+cf_best_terrestrial_servers_create_query = sql.SQL(
+    """
+    CREATE TABLE IF NOT EXISTS cf_terrestrial_servers (
         client_city VARCHAR(255) NOT NULL,
         client_country_code CHAR(2) NOT NULL,
         server_airport_code CHAR(3) NOT NULL,
-        CONSTRAINT cf_server_for_city_pkey PRIMARY KEY (client_city, client_country_code, server_airport_code)
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        CONSTRAINT cf_terrestrial_servers_pkey PRIMARY KEY (client_city, client_country_code, server_airport_code, month, year)
     );
 """
 )
 
+cf_best_starlink_servers_create_query = sql.SQL(
+    """
+    CREATE TABLE IF NOT EXISTS cf_starlink_servers (
+        client_city VARCHAR(255) NOT NULL,
+        client_country_code CHAR(2) NOT NULL,
+        server_airport_code CHAR(3) NOT NULL,
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        CONSTRAINT cf_starlink_servers_pkey PRIMARY KEY (client_city, client_country_code, server_airport_code, month, year)
+    );
+"""
+)
 
 cf_temp_create_query = sql.SQL(
     """

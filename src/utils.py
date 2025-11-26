@@ -30,10 +30,14 @@ def download_file(url: str, file_name: str, unzip: bool = False) -> None:
         logger.info(f"File saved to: {file_path}")
 
 
-def save_dataframe_to_csv(df: pd.DataFrame, file_name: str) -> None:
+def save_dataframe_to_csv(df: pd.DataFrame, file_name: str, append: bool = False) -> None:
     file_path = data_dir / file_name
-    df.to_csv(file_path, index=False)
-    logger.info(f"DataFrame saved to: {file_path}")
+    if append and file_path.exists():
+        df.to_csv(file_path, mode='a', header=False, index=False)
+        logger.info(f"DataFrame appended to: {file_path}")
+    else:
+        df.to_csv(file_path, index=False)
+        logger.info(f"DataFrame saved to: {file_path}")
 
 
 def delete_files(file_names: list[str]) -> None:
@@ -173,6 +177,18 @@ def parse_date_range(date_range: str) -> tuple[date, date]:
             f"Invalid date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}. Start date cannot be after end date."
         )
         raise InvalidDateRangeError(start_date, end_date)
+    return (start_date, end_date)
+
+
+def parse_date_range_from_months(date_range: str) -> tuple[date, date]:
+    parts = date_range.split(':', 1)
+    start_date = datetime.strptime(parts[0], "%Y-%m").date().replace(day=1)
+    end_date = datetime.strptime(parts[1], "%Y-%m").date().replace(day=1) if len(parts) > 1 else start_date
+    if start_date > end_date:
+        logger.error(
+            f"Invalid date range: {start_date.strftime('%Y-%m')} to {end_date.strftime('%Y-%m')}. Start date cannot be after end date."
+        )
+        raise InvalidDateRangeError(start_date, end_date, month_only=True)
     return (start_date, end_date)
 
 
