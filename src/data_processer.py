@@ -17,7 +17,6 @@ from .sql.update_queries import (
     ndt_temp_standardize_client_cities_query,
     ndt_temp_standardize_server_cities_query,
 )
-from .table_data import table_data
 
 
 class DataProcesser:
