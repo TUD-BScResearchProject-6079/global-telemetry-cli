@@ -132,6 +132,3 @@ airport_codes_standardize_cities_query = sql.SQL(
         AND ac.country_code = c.country_code;
 """
 )
-
-
-print(get_ndt7_temp_delete_invalid_servers_query("ndt7_starlink_servers"))
